@@ -96,6 +96,13 @@ require `omarchy restart shell`. Popup-only edits apply on rescan.
   pattern as `AlbumArt`) or corners render square while the card chrome stays
   round.
 - Drag deltas must be measured in a frame that does not move with the drag.
+  (`DragHandler.centroid` resolves in the handler's moving parent frame, so driving a card's own position from it creates a feedback loop.)
+- Interactive areas (`MouseArea`, handlers) declared as named property values
+  (`property MouseArea x: MouseArea {...}`) may never join the visual tree,
+  so they silently receive no pointer events even though anchors resolve.
+  Prefer direct visual children; where a default-property alias forbids
+  that, assign an explicit visual parent (`parent: root`). Direct children
+  (card buttons, flip areas, resize grips) are the proof pattern that works.
   `DragHandler.centroid` is resolved in the handler's (moving) parent frame,
   so driving a card's own position from it creates a feedback loop: the card
   perpetually lags behind the cursor. Measure absolute deltas from the press
