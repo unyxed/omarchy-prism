@@ -1,9 +1,12 @@
 import QtQuick
+import QtQuick.Effects
 import qs.Commons
 import qs.Commons as Commons
 
-// macOS-style photo tile: edge-to-edge image clipped to the card's rounded
-// corners, drag to move and corner-drag to resize like every other card.
+// macOS-style photo tile: edge-to-edge image with properly rounded corners.
+// NOTE: GlassCard's clip:true clips to the square bounding box, so a
+// full-bleed image needs its own rounded-rect mask (MultiEffect, same
+// pattern as AlbumArt) or the corners render square.
 GlassCard {
   id: root
 
@@ -24,12 +27,36 @@ GlassCard {
     Image {
       id: photo
       anchors.fill: parent
+      visible: false
       fillMode: Image.PreserveAspectCrop
       source: root.sourceUrl
       asynchronous: true
       cache: true
       smooth: true
       sourceSize.width: Math.min(1408, Math.max(568, Math.ceil(root.cardW * 2)))
+    }
+
+    // Rounded-rect mask matching the card chrome exactly.
+    Item {
+      id: photoMask
+      anchors.fill: parent
+      visible: false
+      layer.enabled: true
+      Rectangle {
+        anchors.fill: parent
+        radius: root.cardRadius
+        color: "black"
+      }
+    }
+
+    MultiEffect {
+      anchors.fill: parent
+      visible: photo.status === Image.Ready
+      source: photo
+      maskEnabled: true
+      maskSource: photoMask
+      maskThresholdMin: 0.5
+      maskSpreadAtMin: 1.0
     }
 
     Text {

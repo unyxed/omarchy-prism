@@ -90,6 +90,11 @@ require `omarchy restart shell`. Popup-only edits apply on rescan.
   attached property — it is null during delegate setup and spams
   `Cannot read property 'currentIndex' of null`. Give the view an `id`
   and reference it directly.
+- `clip: true` on a rounded `Rectangle` clips children to the *square*
+  bounding box, not the rounded shape. Anything full-bleed (photos, backdrops)
+  needs its own rounded-rect mask (`MultiEffect` + hidden mask item, same
+  pattern as `AlbumArt`) or corners render square while the card chrome stays
+  round.
 - Flipable sizing: fix the height at `max(front, back)` for the whole flip.
   Animating height per side forces per-frame layer-surface resizes plus a
   full sibling reflow underneath the rotation — reads as stutter. Center
