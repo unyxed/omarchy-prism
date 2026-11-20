@@ -18,6 +18,7 @@ GlassCard {
   property string mediaStyle: "cover"
   property bool flipped: false
 
+
   readonly property string trackTitle: media ? String(media.title || "") : ""
   readonly property string artist: media ? String(media.artist || "") : ""
   readonly property string album: media ? String(media.album || "") : ""
@@ -90,7 +91,11 @@ GlassCard {
   Flipable {
     id: flipper
     width: parent.width
-    height: root.flipped ? backCol.implicitHeight : frontCol.implicitHeight
+    // Fixed at the taller side: the flip then turns in place with zero layout
+    // motion (no per-frame surface resizes, no sibling reflow), which is what
+    // keeps the animation smooth. Height still animates on style/content
+    // changes via the Behavior below.
+    height: Math.max(frontCol.implicitHeight, backCol.implicitHeight)
     Behavior on height { NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic } }
 
     // Flipable paints both sides unconditionally, so visibility is switched
@@ -116,6 +121,7 @@ GlassCard {
       Column {
         id: frontCol
         width: parent.width
+        anchors.verticalCenter: parent.verticalCenter
 
   // ==================== STYLE 1: COVER (Large Square Cover + Progress) ====================
   Row {
@@ -589,6 +595,7 @@ GlassCard {
       Column {
         id: backCol
         width: parent.width
+        anchors.verticalCenter: parent.verticalCenter
         spacing: Style.spacing.sm
 
         // Mini cover: the reverse side when the front already shows lyrics

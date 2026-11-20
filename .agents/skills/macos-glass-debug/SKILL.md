@@ -90,6 +90,10 @@ require `omarchy restart shell`. Popup-only edits apply on rescan.
   attached property — it is null during delegate setup and spams
   `Cannot read property 'currentIndex' of null`. Give the view an `id`
   and reference it directly.
+- Flipable sizing: fix the height at `max(front, back)` for the whole flip.
+  Animating height per side forces per-frame layer-surface resizes plus a
+  full sibling reflow underneath the rotation — reads as stutter. Center
+  content vertically so the shorter side sits naturally.
 - One `Component.onCompleted` per object. A duplicated handler (e.g. from
   a temp test edit) warns `Property value set multiple times`.
 
