@@ -73,7 +73,27 @@ require `omarchy restart shell`. Popup-only edits apply on rescan.
   `title` shadowing the inherited `GlassCard.title`; rename the card's
   property (e.g. `trackTitle`).
 
-## 5. After any fix
+## 5. Flipable cards (learned 0.4.0 — read before touching MediaCard)
+
+- `Flipable` paints **both** sides unconditionally — there is no automatic
+  backface culling. Gate visibility explicitly on the live angle, e.g.
+  `showingFront` from `((angle % 360) + 360) % 360`, front visible at
+  `a <= 90 || a >= 270`, back otherwise. Without this the reverse side
+  bleeds through mirrored.
+- Do **not** pre-rotate the back side (`transform: Rotation { angle: 180 }`
+  on `back:`). It double-mirrors: the canonical Qt Flipable demo uses a
+  plain back and reads correctly. Tested the wrong way — mirrored text
+  in `hyprctl`-adjacent screenshots.
+- Inner content keeps measuring while its wrapper is hidden, so height
+  bindings off inner columns stay valid across the visibility swap.
+- In `ListView` delegates (and highlights), never use the `ListView.view`
+  attached property — it is null during delegate setup and spams
+  `Cannot read property 'currentIndex' of null`. Give the view an `id`
+  and reference it directly.
+- One `Component.onCompleted` per object. A duplicated handler (e.g. from
+  a temp test edit) warns `Property value set multiple times`.
+
+## 6. After any fix
 
 `./scripts/check.sh`, restart-or-rescan per section 3, then re-run the
 section-0 baseline: entry populated, full-size surfaces, zero log warnings.

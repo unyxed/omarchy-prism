@@ -579,14 +579,6 @@ GlassCard {
       id: backRoot
       anchors.fill: parent
       visible: !flipper.showingFront
-      transform: Rotation {
-        origin.x: backRoot.width / 2
-        origin.y: backRoot.height / 2
-        axis.x: 0
-        axis.y: 1
-        axis.z: 0
-        angle: 180
-      }
 
       MouseArea {
         anchors.fill: parent
