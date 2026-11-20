@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "unyxed.macos-glass",
   "name": "macOS Glass Widgets",
-  "version": "0.7.4",
+  "version": "0.8.0",
   "author": "unyxed",
   "license": "MIT",
   "description": "macOS-style desktop widgets with liquid-glass looks: oversized clock, CPU/RAM and GPU ring gauges, vinyl now-playing with album art, split month-grid calendar, and a fast reminders list. Theme-aware cards that turn into real liquid glass with hyprglass.",
@@ -44,7 +44,6 @@
       "timeFormat": "24h",
       "showDate": true,
       "showLabels": false,
-      "showCpuCores": true,
       "hideMediaWhenIdle": false,
       "preferredPlayer": "",
       "todoRows": 5,
@@ -132,12 +131,6 @@
         "type": "boolean",
         "label": "Show widget titles",
         "defaultValue": false
-      },
-      {
-        "key": "showCpuCores",
-        "type": "boolean",
-        "label": "Show a bar per CPU thread",
-        "defaultValue": true
       },
       {
         "key": "hideMediaWhenIdle",

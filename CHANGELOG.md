@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0
+
+- Flippable system card: per-core bar strips removed from the front;
+  double-click reveals labeled per-thread rows plus memory on the back
+  (the per-thread toggle is gone with them)
+
 ## 0.7.4
 
 - First-flip stutter, second attempt: warm-up now runs for 5 s behind the

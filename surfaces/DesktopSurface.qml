@@ -245,8 +245,6 @@ Item {
       if (item.toggleRequested && typeof item.toggleRequested.connect === "function")
         item.toggleRequested.connect(function (todoId) { root.todoToggled(todoId) })
     }
-    if ("showCores" in item)
-      item.showCores = Qt.binding(function () { return root.config.showCpuCores })
     if ("timeFormat" in item)
       item.timeFormat = Qt.binding(function () { return root.config.timeFormat })
     if ("showDate" in item)

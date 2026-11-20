@@ -19,6 +19,7 @@ compositor plugin is installed.
   lyrics on the back of Cover / Poster / Vinyl, cover on the back of Lyrics
 - **Flippable calendar** — double-click to flip it over: live agenda from
   your Google Calendar feeds, with refresh button
+- **Flippable system card** — double-click for per-thread load detail
 - **Free placement** — right-drag any card to put it anywhere on the desktop
   (left clicks stay reserved for controls and double-click-to-flip);
   drag a corner to resize

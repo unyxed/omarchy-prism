@@ -54,7 +54,7 @@ Column {
   Toggle {
     width: parent.width
     label: "System"
-    description: "CPU load, per-thread bars and memory."
+    description: "CPU load and memory."
     checked: root.widgetEnabled("system")
     foreground: root.foreground
     onClicked: root.widgetToggled("system")
@@ -296,14 +296,6 @@ Column {
     checked: root.config.showDate
     foreground: root.foreground
     onClicked: root.flagToggled("showDate")
-  }
-
-  Toggle {
-    width: parent.width
-    label: "Per-thread CPU bars"
-    checked: root.config.showCpuCores
-    foreground: root.foreground
-    onClicked: root.flagToggled("showCpuCores")
   }
 
   Toggle {

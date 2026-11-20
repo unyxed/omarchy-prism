@@ -38,7 +38,6 @@ var DEFAULTS = {
   timeFormat: "24h",
   showDate: true,
   showLabels: false,
-  showCpuCores: true,
   hideMediaWhenIdle: false,
   preferredPlayer: "",
   todoRows: 5,
@@ -188,7 +187,6 @@ function normalize(raw) {
   out.timeFormat = String(value.timeFormat) === "12h" ? "12h" : "24h"
   out.showDate = value.showDate === undefined ? DEFAULTS.showDate : !!value.showDate
   out.showLabels = value.showLabels === undefined ? DEFAULTS.showLabels : !!value.showLabels
-  out.showCpuCores = value.showCpuCores === undefined ? DEFAULTS.showCpuCores : !!value.showCpuCores
   out.hideMediaWhenIdle = value.hideMediaWhenIdle === undefined ? DEFAULTS.hideMediaWhenIdle : !!value.hideMediaWhenIdle
   out.preferredPlayer = typeof value.preferredPlayer === "string" ? value.preferredPlayer.substring(0, 64) : ""
   out.todoRows = clamp(value.todoRows, 1, 20, DEFAULTS.todoRows)

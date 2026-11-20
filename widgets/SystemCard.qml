@@ -4,13 +4,18 @@ import qs.Commons as Commons
 
 // macOS System Widget with 2 selectable styles:
 //   - "rings": Circular ring gauges with percentage inside the ring + label/GiB below (never truncates)
-//   - "bars": Full-width horizontal macOS metric bars + per-core sparkbars
+//   - "bars": Full-width horizontal macOS metric bars
+//
+// Double-click flips the card: the reverse side is per-thread load detail.
 GlassCard {
   id: root
 
   property var system: null
-  property bool showCores: true
   property string systemStyle: "rings"
+  property bool flipped: false
+
+
+  onDoubleClicked: root.flipped = !root.flipped
 
   readonly property real cpuLoad: system ? system.cpuLoad : -1
   readonly property var coreLoads: system ? system.coreLoads : []
@@ -29,192 +34,348 @@ GlassCard {
     return Commons.I18n.formatNumber(n / 1048576, 1) + " GiB"
   }
 
-  // ==================== STYLE 1: RINGS ====================
-  Row {
+  Flipable {
+    id: flipper
     width: parent.width
-    visible: root.systemStyle === "rings"
-    spacing: Style.spacing.md
+    // Fixed at the taller side so the turn animates in place with zero
+    // layout motion (no per-frame resizes, no sibling reflow).
+    height: Math.max(frontCol.implicitHeight, backCol.implicitHeight)
+    Behavior on height { NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic } }
 
-    // Left tile: CPU Ring (percentage inside ring, label below -> zero truncation)
-    Rectangle {
-      width: (parent.width - parent.spacing) / 2
-      height: Style.space(98)
-      radius: Style.space(16)
-      color: Util.alpha(root.fg, 0.06)
-      border.width: Style.space(1)
-      border.color: Util.alpha("#ffffff", 0.12)
+    // Flipable paints both sides unconditionally, so visibility is switched
+    // explicitly at the edge-on point.
+    readonly property bool showingFront: {
+      var a = ((flipRot.angle % 360) + 360) % 360
+      return a <= 90 || a >= 270
+    }
+
+    front: Item {
+      anchors.fill: parent
+      visible: flipper.showingFront
 
       Column {
-        anchors.centerIn: parent
-        spacing: Style.space(6)
+        id: frontCol
+        width: parent.width
+        anchors.verticalCenter: parent.verticalCenter
 
-        RingGauge {
-          anchors.horizontalCenter: parent.horizontalCenter
-          ringSize: Style.space(58)
-          strokeWidth: Style.space(6)
-          fraction: root.cpuLoad
-          ringColor: root.cpuLoad > 0.85 ? Color.urgent : root.accent
-          centerText: root.percentText(root.cpuLoad)
+        // ==================== STYLE 1: RINGS ====================
+        Row {
+          width: parent.width
+          visible: root.systemStyle === "rings"
+          spacing: Style.spacing.md
+
+          // Left tile: CPU Ring (percentage inside ring, label below -> zero truncation)
+          Rectangle {
+            width: (parent.width - parent.spacing) / 2
+            height: Style.space(98)
+            radius: Style.space(16)
+            color: Util.alpha(root.fg, 0.06)
+            border.width: Style.space(1)
+            border.color: Util.alpha("#ffffff", 0.12)
+
+            Column {
+              anchors.centerIn: parent
+              spacing: Style.space(6)
+
+              RingGauge {
+                anchors.horizontalCenter: parent.horizontalCenter
+                ringSize: Style.space(58)
+                strokeWidth: Style.space(6)
+                fraction: root.cpuLoad
+                ringColor: root.cpuLoad > 0.85 ? Color.urgent : root.accent
+                centerText: root.percentText(root.cpuLoad)
+              }
+
+              Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                textFormat: Text.PlainText
+                text: "󰍛  CPU"
+                color: root.fg
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                font.bold: true
+              }
+            }
+          }
+
+          // Right tile: Memory Ring (percentage inside ring, GiB below -> zero truncation)
+          Rectangle {
+            width: (parent.width - parent.spacing) / 2
+            height: Style.space(98)
+            radius: Style.space(16)
+            color: Util.alpha(root.fg, 0.06)
+            border.width: Style.space(1)
+            border.color: Util.alpha("#ffffff", 0.12)
+
+            Column {
+              anchors.centerIn: parent
+              spacing: Style.space(6)
+
+              RingGauge {
+                anchors.horizontalCenter: parent.horizontalCenter
+                ringSize: Style.space(58)
+                strokeWidth: Style.space(6)
+                fraction: root.memFraction
+                ringColor: root.memFraction > 0.88 ? Color.urgent : root.accent
+                centerText: root.percentText(root.memFraction)
+              }
+
+              Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                textFormat: Text.PlainText
+                text: "󰘚  " + root.gibShort(root.memUsedKib)
+                color: root.fg
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                font.bold: true
+              }
+            }
+          }
+        }
+
+        // ==================== STYLE 2: BARS ====================
+        Column {
+          width: parent.width
+          visible: root.systemStyle === "bars"
+          spacing: Style.spacing.sm
+
+          Row {
+            width: parent.width
+            Text {
+              id: cpuLabel
+              textFormat: Text.PlainText
+              text: "󰍛  CPU"
+              color: root.fg
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.body
+              font.bold: true
+            }
+            Item {
+              width: Math.max(0, parent.width - cpuLabel.implicitWidth - cpuVal.implicitWidth)
+              height: 1
+            }
+            Text {
+              id: cpuVal
+              textFormat: Text.PlainText
+              text: root.percentText(root.cpuLoad)
+              color: root.accent
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.body
+              font.bold: true
+            }
+          }
+
+          Rectangle {
+            width: parent.width
+            height: Style.space(7)
+            radius: height / 2
+            color: Util.alpha(root.fg, 0.14)
+            Rectangle {
+              width: parent.width * Math.max(0, Math.min(1, root.cpuLoad < 0 ? 0 : root.cpuLoad))
+              height: parent.height
+              radius: parent.radius
+              color: root.cpuLoad > 0.85 ? Color.urgent : root.accent
+              Behavior on width { NumberAnimation { duration: Style.duration(180); easing.type: Easing.OutCubic } }
+            }
+          }
+
+          Row {
+            width: parent.width
+            Text {
+              id: memLabel
+              textFormat: Text.PlainText
+              text: "󰘚  Memory"
+              color: root.fg
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.body
+              font.bold: true
+            }
+            Item {
+              width: Math.max(0, parent.width - memLabel.implicitWidth - memVal.implicitWidth)
+              height: 1
+            }
+            Text {
+              id: memVal
+              textFormat: Text.PlainText
+              text: root.gibShort(root.memUsedKib) + " / " + root.gibShort(root.memTotalKib)
+              color: root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+              font.bold: true
+            }
+          }
+
+          Rectangle {
+            width: parent.width
+            height: Style.space(7)
+            radius: height / 2
+            color: Util.alpha(root.fg, 0.14)
+            Rectangle {
+              width: parent.width * Math.max(0, Math.min(1, root.memFraction < 0 ? 0 : root.memFraction))
+              height: parent.height
+              radius: parent.radius
+              color: root.memFraction > 0.88 ? Color.urgent : root.accent
+              Behavior on width { NumberAnimation { duration: Style.duration(180); easing.type: Easing.OutCubic } }
+            }
+          }
+        }
+      }
+    }
+
+    back: Item {
+      id: backRoot
+      anchors.fill: parent
+      visible: !flipper.showingFront
+
+      Column {
+        id: backCol
+        width: parent.width
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: Style.spacing.sm
+
+        // Per-thread load detail, scrollable for many-core machines.
+        Row {
+          width: parent.width
+          spacing: Style.spacing.sm
+
+          Text {
+            width: parent.width - backCoreCount.implicitWidth - parent.spacing
+            anchors.verticalCenter: parent.verticalCenter
+            textFormat: Text.PlainText
+            text: root.strings.t("system.threads")
+            color: root.fg
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.subtitle
+            font.bold: true
+            elide: Text.ElideRight
+          }
+
+          Text {
+            id: backCoreCount
+            anchors.verticalCenter: parent.verticalCenter
+            textFormat: Text.PlainText
+            text: Commons.I18n.formatNumber(root.coreLoads.length, 0)
+            color: root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+            font.bold: true
+          }
         }
 
         Text {
-          anchors.horizontalCenter: parent.horizontalCenter
+          width: parent.width
+          visible: root.coreLoads.length === 0
+          height: visible ? Style.space(120) : 0
           textFormat: Text.PlainText
-          text: "󰍛  CPU"
-          color: root.fg
+          text: root.strings.t("system.nocores")
+          color: root.dim
           font.family: root.fontFamily
           font.pixelSize: Style.font.caption
-          font.bold: true
+          horizontalAlignment: Text.AlignHCenter
+          verticalAlignment: Text.AlignVCenter
+          wrapMode: Text.WordWrap
         }
-      }
-    }
 
-    // Right tile: Memory Ring (percentage inside ring, GiB below -> zero truncation)
-    Rectangle {
-      width: (parent.width - parent.spacing) / 2
-      height: Style.space(98)
-      radius: Style.space(16)
-      color: Util.alpha(root.fg, 0.06)
-      border.width: Style.space(1)
-      border.color: Util.alpha("#ffffff", 0.12)
+        ListView {
+          id: backCoreList
+          width: parent.width
+          visible: root.coreLoads.length > 0
+          height: Style.space(120)
+          clip: true
+          model: root.coreLoads
+          spacing: Style.space(4)
 
-      Column {
-        anchors.centerIn: parent
-        spacing: Style.space(6)
+          delegate: Item {
+            width: backCoreList.width
+            height: Style.space(16)
 
-        RingGauge {
-          anchors.horizontalCenter: parent.horizontalCenter
-          ringSize: Style.space(58)
-          strokeWidth: Style.space(6)
-          fraction: root.memFraction
-          ringColor: root.memFraction > 0.88 ? Color.urgent : root.accent
-          centerText: root.percentText(root.memFraction)
+            Row {
+              anchors.fill: parent
+              spacing: Style.spacing.sm
+
+              Text {
+                width: Style.space(28)
+                anchors.verticalCenter: parent.verticalCenter
+                textFormat: Text.PlainText
+                text: "C" + index
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                font.bold: true
+                elide: Text.ElideRight
+              }
+
+              Rectangle {
+                width: parent.width - Style.space(28) - backCorePct.implicitWidth - parent.spacing * 2
+                height: Style.space(6)
+                radius: height / 2
+                anchors.verticalCenter: parent.verticalCenter
+                color: Util.alpha(root.fg, 0.14)
+
+                Rectangle {
+                  width: parent.width * Math.max(0, Math.min(1, modelData < 0 ? 0 : modelData))
+                  height: parent.height
+                  radius: parent.radius
+                  color: modelData > 0.85 ? Color.urgent : root.accent
+                }
+              }
+
+              Text {
+                id: backCorePct
+                anchors.verticalCenter: parent.verticalCenter
+                textFormat: Text.PlainText
+                text: root.percentText(modelData)
+                color: root.fg
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                font.bold: true
+              }
+            }
+          }
         }
 
         Text {
-          anchors.horizontalCenter: parent.horizontalCenter
+          width: parent.width
           textFormat: Text.PlainText
-          text: "󰘚  " + root.gibShort(root.memUsedKib)
-          color: root.fg
+          text: root.strings.t("system.memory") + "  " + root.gibShort(root.memUsedKib) + " / " + root.gibShort(root.memTotalKib)
+          color: root.dim
           font.family: root.fontFamily
           font.pixelSize: Style.font.caption
           font.bold: true
+          elide: Text.ElideRight
+        }
+
+        Text {
+          width: parent.width
+          textFormat: Text.PlainText
+          text: root.strings.t("system.flipback")
+          color: root.dim
+          font.family: root.fontFamily
+          font.pixelSize: Math.max(9, Style.font.caption - 2)
+          font.italic: true
+          horizontalAlignment: Text.AlignHCenter
         }
       }
     }
-  }
 
-  // ==================== STYLE 2: BARS ====================
-  Column {
-    width: parent.width
-    visible: root.systemStyle === "bars"
-    spacing: Style.spacing.sm
-
-    Row {
-      width: parent.width
-      Text {
-        id: cpuLabel
-        textFormat: Text.PlainText
-        text: "󰍛  CPU"
-        color: root.fg
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.body
-        font.bold: true
-      }
-      Item {
-        width: Math.max(0, parent.width - cpuLabel.implicitWidth - cpuVal.implicitWidth)
-        height: 1
-      }
-      Text {
-        id: cpuVal
-        textFormat: Text.PlainText
-        text: root.percentText(root.cpuLoad)
-        color: root.accent
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.body
-        font.bold: true
-      }
+    transform: Rotation {
+      id: flipRot
+      origin.x: flipper.width / 2
+      origin.y: flipper.height / 2
+      axis.x: 0
+      axis.y: 1
+      axis.z: 0
+      angle: 0
     }
 
-    Rectangle {
-      width: parent.width
-      height: Style.space(7)
-      radius: height / 2
-      color: Util.alpha(root.fg, 0.14)
-      Rectangle {
-        width: parent.width * Math.max(0, Math.min(1, root.cpuLoad < 0 ? 0 : root.cpuLoad))
-        height: parent.height
-        radius: parent.radius
-        color: root.cpuLoad > 0.85 ? Color.urgent : root.accent
-        Behavior on width { NumberAnimation { duration: Style.duration(180); easing.type: Easing.OutCubic } }
-      }
+    states: State {
+      name: "back"
+      when: root.flipped
+      PropertyChanges { target: flipRot; angle: 180 }
     }
 
-    Row {
-      width: parent.width
-      Text {
-        id: memLabel
-        textFormat: Text.PlainText
-        text: "󰘚  Memory"
-        color: root.fg
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.body
-        font.bold: true
-      }
-      Item {
-        width: Math.max(0, parent.width - memLabel.implicitWidth - memVal.implicitWidth)
-        height: 1
-      }
-      Text {
-        id: memVal
-        textFormat: Text.PlainText
-        text: root.gibShort(root.memUsedKib) + " / " + root.gibShort(root.memTotalKib)
-        color: root.dim
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
-        font.bold: true
-      }
-    }
-
-    Rectangle {
-      width: parent.width
-      height: Style.space(7)
-      radius: height / 2
-      color: Util.alpha(root.fg, 0.14)
-      Rectangle {
-        width: parent.width * Math.max(0, Math.min(1, root.memFraction < 0 ? 0 : root.memFraction))
-        height: parent.height
-        radius: parent.radius
-        color: root.memFraction > 0.88 ? Color.urgent : root.accent
-        Behavior on width { NumberAnimation { duration: Style.duration(180); easing.type: Easing.OutCubic } }
-      }
-    }
-  }
-
-  // Per-thread mini spark bars
-  Grid {
-    id: coreGrid
-    width: parent.width
-    visible: root.showCores && root.coreLoads.length > 0
-    height: visible ? implicitHeight : 0
-    columns: Math.min(8, Math.max(1, root.coreLoads.length))
-    spacing: Style.spacing.xs
-    readonly property real cellWidth: (coreGrid.width - spacing * (columns - 1)) / columns
-
-    Repeater {
-      model: root.coreLoads
-      Rectangle {
-        width: coreGrid.cellWidth
-        height: Style.space(4)
-        radius: height / 2
-        color: Util.alpha(root.fg, 0.12)
-        Rectangle {
-          width: parent.width * Math.max(0, Math.min(1, modelData < 0 ? 0 : modelData))
-          height: parent.height
-          radius: parent.radius
-          color: modelData > 0.85 ? Color.urgent : root.accent
-        }
-      }
+    transitions: Transition {
+      NumberAnimation { target: flipRot; property: "angle"; duration: Style.duration(320); easing.type: Easing.OutCubic }
     }
   }
 }
