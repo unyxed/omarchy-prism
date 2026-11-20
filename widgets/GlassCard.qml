@@ -56,6 +56,28 @@ Rectangle {
     }
   }
 
+  // Left-button free placement, attached at card level like OmaWidgets'
+  // packed-layout slots: a DragHandler only takes over past the drag
+  // threshold, so clicks on toggles, transport buttons and checkboxes still
+  // land while a real drag moves the card.
+  property DragHandler moveHandler: DragHandler {
+    target: null
+    acceptedButtons: Qt.LeftButton
+    onActiveChanged: {
+      if (!active) {
+        var dx = Math.round(centroid.position.x - centroid.pressPosition.x)
+        var dy = Math.round(centroid.position.y - centroid.pressPosition.y)
+        root.moveCommit(root.widgetId, dx, dy)
+      }
+    }
+    onCentroidChanged: {
+      if (!active) return
+      var mdx = Math.round(centroid.position.x - centroid.pressPosition.x)
+      var mdy = Math.round(centroid.position.y - centroid.pressPosition.y)
+      root.movePreview(root.widgetId, mdx, mdy)
+    }
+  }
+
   width: cardW
   height: cardH > 0 ? cardH : implicitHeight
   implicitWidth: cardW

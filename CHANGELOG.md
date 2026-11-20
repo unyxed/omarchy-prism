@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+- Free placement: left-drag any card to move it (clicks on buttons and
+  checkboxes still work — drag only takes over past the threshold);
+  right-drag still works; popup explains the gesture
+
 ## 0.4.0
 
 - Flippable music card: double-click flips cover/poster/vinyl to reveal
