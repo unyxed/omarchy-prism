@@ -43,6 +43,9 @@ Rectangle {
   default property alias content: column.children
 
   property MouseArea dragArea: MouseArea {
+    // Explicit visual parent: property-held items must be in the scene's
+    // visual tree to receive pointer events at all.
+    parent: root
     anchors.fill: parent
     acceptedButtons: Qt.RightButton
     hoverEnabled: true
@@ -70,6 +73,9 @@ Rectangle {
   // keep receiving their clicks; only presses on empty card space start a
   // move. Double-clicks (no drag) fall through to `doubleClicked`.
   property MouseArea moveArea: MouseArea {
+    // Explicit visual parent: see dragArea above. Without this the area
+    // may never see presses, and no drag can start.
+    parent: root
     anchors.fill: parent
     acceptedButtons: Qt.LeftButton
     cursorShape: Qt.SizeAllCursor
