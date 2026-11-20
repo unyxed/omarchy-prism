@@ -93,17 +93,17 @@ GlassCard {
   Flipable {
     id: flipper
     width: parent.width
-    // Fixed at the taller side: the flip then turns in place with zero layout
-    // motion (no per-frame surface resizes, no sibling reflow), which is what
-    // keeps the animation smooth. Height still animates on style/content
-    // changes via the Behavior below.
-    // Follows the visible face (never max): pinning the taller face leaves
-    // dead space on the short one. Honors an explicit user resize minus the
-    // card frame, with faces centered inside; content taller than a resized
-    // frame clips until reset.
+    // Locked to the front face (or an explicit user resize): the back must
+    // fit this frame, never grow it. Back scroll areas take remaining space
+    // (see bodyH), so flipping and late-arriving data never resize the card.
     height: root.cardH > 0 ? Math.max(Style.space(40), root.cardH - 2 * root.pad)
-      : (root.flipped ? backCol.implicitHeight : frontCol.implicitHeight)
+      : frontCol.implicitHeight
     Behavior on height { NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic } }
+
+    // Remaining vertical space inside this frame once the back header and
+    // hint are laid out. Scroll areas bind to this instead of fixed heights.
+    readonly property real bodyH: Math.max(Style.space(56),
+      height - backHeadRow.implicitHeight - backHint.implicitHeight - Style.spacing.sm * 2)
 
     // Flipable paints both sides unconditionally, so visibility is switched
     // explicitly at the edge-on point. Inner columns keep measuring while
@@ -209,10 +209,10 @@ GlassCard {
         maximumLineCount: 1
       }
 
-      // Progress bar + timestamps
+      // Progress bar + timestamps. Always reserved (empty track + "--:--"
+      // when idle) so starting playback never resizes the card.
       Column {
         width: parent.width
-        visible: root.hasMedia && root.progress >= 0
         spacing: Style.space(2)
 
         Rectangle {
@@ -222,7 +222,7 @@ GlassCard {
           color: Util.alpha(root.fg, 0.14)
 
           Rectangle {
-            width: parent.width * Math.max(0, Math.min(1, root.progress))
+            width: parent.width * (root.hasMedia && root.progress >= 0 ? Math.max(0, Math.min(1, root.progress)) : 0)
             height: parent.height
             radius: parent.radius
             color: root.accent
@@ -235,7 +235,7 @@ GlassCard {
           Text {
             id: posText
             textFormat: Text.PlainText
-            text: root.formatDuration(root.positionSec)
+            text: root.hasMedia ? root.formatDuration(root.positionSec) : "--:--"
             color: root.dim
             font.family: root.fontFamily
             font.pixelSize: Math.max(9, Style.font.caption - 2)
@@ -247,7 +247,7 @@ GlassCard {
           Text {
             id: lenText
             textFormat: Text.PlainText
-            text: root.formatDuration(root.lengthSec)
+            text: root.hasMedia && root.lengthSec > 0 ? root.formatDuration(root.lengthSec) : "--:--"
             color: root.dim
             font.family: root.fontFamily
             font.pixelSize: Math.max(9, Style.font.caption - 2)
@@ -622,8 +622,9 @@ GlassCard {
           spacing: Style.spacing.sm
 
           Rectangle {
-            width: Style.space(56)
-            height: Style.space(56)
+            id: backMiniArt
+            width: Math.max(Style.space(64), flipper.height - backHint.implicitHeight - Style.spacing.sm)
+            height: width
             radius: Style.space(10)
             color: Util.alpha(root.fg, 0.08)
             border.width: Style.space(1)
@@ -638,7 +639,7 @@ GlassCard {
           }
 
           Column {
-            width: parent.width - Style.space(56) - parent.spacing
+            width: parent.width - backMiniArt.width - parent.spacing
             anchors.verticalCenter: parent.verticalCenter
             spacing: Style.space(1)
 
@@ -676,6 +677,7 @@ GlassCard {
           spacing: Style.spacing.xs
 
           Row {
+            id: backHeadRow
             width: parent.width
             spacing: Style.spacing.sm
 
@@ -709,7 +711,7 @@ GlassCard {
           Text {
             width: parent.width
             visible: !root.hasMedia || root.lyricsState === "" || root.lyricsState === "loading"
-            height: visible ? Style.space(96) : 0
+            height: visible ? flipper.bodyH : 0
             textFormat: Text.PlainText
             text: !root.hasMedia ? root.strings.t("media.idle") : root.strings.t("media.searching")
             color: root.dim
@@ -723,7 +725,7 @@ GlassCard {
           Text {
             width: parent.width
             visible: root.hasMedia && (root.lyricsState === "none" || (root.lyricsState === "ready" && root.lyricsInstrumental && root.lyricsLines.length === 0 && root.lyricsPlainLines.length === 0))
-            height: visible ? Style.space(96) : 0
+            height: visible ? flipper.bodyH : 0
             textFormat: Text.PlainText
             text: root.lyricsInstrumental ? root.strings.t("media.instrumental") : root.strings.t("media.nolyrics")
             color: root.dim
@@ -739,7 +741,7 @@ GlassCard {
             id: backLyricsList
             width: parent.width
             visible: root.hasMedia && root.lyricsState === "ready" && root.lyricsSynced
-            height: Style.space(96)
+            height: flipper.bodyH
             clip: true
             model: root.lyricsLines
             currentIndex: root.lyricsIndex
@@ -780,7 +782,7 @@ GlassCard {
           Flickable {
             width: parent.width
             visible: root.hasMedia && root.lyricsState === "ready" && !root.lyricsSynced && root.lyricsPlainLines.length > 0
-            height: Style.space(96)
+            height: flipper.bodyH
             clip: true
             contentWidth: width
             contentHeight: backPlainText.implicitHeight
@@ -800,6 +802,7 @@ GlassCard {
         }
 
         Text {
+          id: backHint
           width: parent.width
           textFormat: Text.PlainText
           text: root.strings.t("media.flipback")

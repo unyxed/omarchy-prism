@@ -146,12 +146,17 @@ GlassCard {
     width: parent.width
     // Fixed at the taller side so the turn animates in place with zero
     // layout motion (no per-frame resizes, no sibling reflow).
-    // Follows the visible face (never max): pinning the taller face leaves
-    // dead space on the short one. Honors an explicit user resize minus the
-    // card frame, with faces centered inside; content taller than a resized
-    // frame clips until reset.
+    // Locked to the front face (or an explicit user resize): the agenda
+    // back fits this frame via bodyH, so flipping and late-arriving events
+    // never resize the card.
     height: root.cardH > 0 ? Math.max(Style.space(40), root.cardH - 2 * root.pad)
-      : (root.flipped ? backCol.implicitHeight : frontCol.implicitHeight)
+      : frontCol.implicitHeight
+    Behavior on height { NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic } }
+
+    // Remaining vertical space inside this frame once the back header and
+    // hint are laid out. Scroll areas bind to this instead of fixed heights.
+    readonly property real bodyH: Math.max(Style.space(56),
+      height - backHeadRow.implicitHeight - backHint.implicitHeight - Style.spacing.sm * 2)
     Behavior on height { NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic } }
 
     // Flipable paints both sides unconditionally, so visibility is switched
@@ -319,6 +324,7 @@ GlassCard {
         spacing: Style.spacing.sm
 
         Row {
+          id: backHeadRow
           width: parent.width
           spacing: Style.spacing.sm
 
@@ -368,7 +374,7 @@ GlassCard {
         Text {
           width: parent.width
           visible: root.agendaState === "" || root.agendaState === "loading"
-          height: visible ? Style.space(150) : 0
+          height: visible ? flipper.bodyH : 0
           textFormat: Text.PlainText
           text: root.strings.t("calendar.searching")
           color: root.dim
@@ -382,7 +388,7 @@ GlassCard {
         Text {
           width: parent.width
           visible: root.agendaState === "none"
-          height: visible ? Style.space(150) : 0
+          height: visible ? flipper.bodyH : 0
           textFormat: Text.PlainText
           text: root.agendaFeeds === 0 ? root.strings.t("calendar.nofeed") : root.strings.t("calendar.nothing")
           color: root.dim
@@ -397,7 +403,7 @@ GlassCard {
           id: backAgendaList
           width: parent.width
           visible: root.agendaState === "ready"
-          height: Style.space(150)
+          height: flipper.bodyH
           clip: true
           model: root.agenda
           spacing: Style.space(7)
@@ -453,6 +459,7 @@ GlassCard {
         }
 
         Text {
+          id: backHint
           width: parent.width
           textFormat: Text.PlainText
           text: root.strings.t("calendar.flipback")

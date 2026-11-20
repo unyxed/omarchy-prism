@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.2
+
+- Flip backs fit the front frame (remaining-space lists): flipping and
+  late-arriving lyrics/events never resize a card; music progress area
+  always reserved so first playback doesn't resize either
+
 ## 0.8.1
 
 - Flip height follows the visible face (plus explicit user resizes):

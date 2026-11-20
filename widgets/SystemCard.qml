@@ -16,6 +16,7 @@ GlassCard {
 
 
 
+
   onDoubleClicked: root.flipped = !root.flipped
 
   readonly property real cpuLoad: system ? system.cpuLoad : -1
@@ -38,15 +39,16 @@ GlassCard {
   Flipable {
     id: flipper
     width: parent.width
-    // Fixed at the taller side so the turn animates in place with zero
-    // layout motion (no per-frame resizes, no sibling reflow).
-    // Follows the visible face (never max): pinning the taller face leaves
-    // dead space on the short one. Honors an explicit user resize minus the
-    // card frame, with faces centered inside; content taller than a resized
-    // frame clips until reset.
+    // Locked to the front face (or an explicit user resize): the threads
+    // back fits this frame via bodyH, so flipping never resizes the card.
     height: root.cardH > 0 ? Math.max(Style.space(40), root.cardH - 2 * root.pad)
-      : (root.flipped ? backCol.implicitHeight : frontCol.implicitHeight)
+      : frontCol.implicitHeight
     Behavior on height { NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic } }
+    // Remaining vertical space inside this frame once the back title,
+    // memory line and hint are laid out. The core list binds to this
+    // instead of a fixed height.
+    readonly property real bodyH: Math.max(Style.space(56),
+      height - backHeadRow.implicitHeight - backMemText.implicitHeight - backHint.implicitHeight - Style.spacing.sm * 3)
 
     // Flipable paints both sides unconditionally, so visibility is switched
     // explicitly at the edge-on point.
@@ -241,6 +243,7 @@ GlassCard {
 
         // Per-thread load detail, scrollable for many-core machines.
         Row {
+          id: backHeadRow
           width: parent.width
           spacing: Style.spacing.sm
 
@@ -271,7 +274,7 @@ GlassCard {
         Text {
           width: parent.width
           visible: root.coreLoads.length === 0
-          height: visible ? Style.space(120) : 0
+          height: visible ? flipper.bodyH : 0
           textFormat: Text.PlainText
           text: root.strings.t("system.nocores")
           color: root.dim
@@ -286,7 +289,7 @@ GlassCard {
           id: backCoreList
           width: parent.width
           visible: root.coreLoads.length > 0
-          height: Style.space(120)
+          height: flipper.bodyH
           clip: true
           model: root.coreLoads
           spacing: Style.space(4)
@@ -341,6 +344,7 @@ GlassCard {
         }
 
         Text {
+          id: backMemText
           width: parent.width
           textFormat: Text.PlainText
           text: root.strings.t("system.memory") + "  " + root.gibShort(root.memUsedKib) + " / " + root.gibShort(root.memTotalKib)
@@ -352,6 +356,7 @@ GlassCard {
         }
 
         Text {
+          id: backHint
           width: parent.width
           textFormat: Text.PlainText
           text: root.strings.t("system.flipback")
