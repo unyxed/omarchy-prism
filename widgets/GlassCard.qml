@@ -154,6 +154,10 @@ Rectangle {
     }
   }
 
+  // Invisible corner resize handle: no pixels ever change on hover, so there
+  // is no flicker as the pointer crosses the corner. The diagonal-resize
+  // cursor still signals that the corner can be dragged (macOS does the
+  // same: no visible handle, cursor feedback only).
   MouseArea {
     id: grip
     visible: root.resizable
@@ -161,6 +165,7 @@ Rectangle {
     height: Style.space(18)
     anchors.right: parent.right
     anchors.bottom: parent.bottom
+    hoverEnabled: true
     cursorShape: Qt.SizeFDiagCursor
     acceptedButtons: Qt.LeftButton
     property real startW: 0
@@ -183,14 +188,6 @@ Rectangle {
       var w = Math.max(Style.space(150), startW + (now.x - startGlobal.x))
       var h = Math.max(Style.space(80), startH + (now.y - startGlobal.y))
       root.resizeCommit(root.widgetId, Math.round(w), Math.round(h))
-    }
-    Rectangle {
-      anchors.fill: parent
-      anchors.margins: Style.space(5)
-      color: "transparent"
-      radius: Style.space(3)
-      border.width: Style.space(1)
-      border.color: Util.alpha(root.fg, grip.containsMouse || grip.pressed ? 0.55 : 0.0)
     }
   }
 }
