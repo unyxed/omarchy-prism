@@ -82,7 +82,16 @@ Service.qml ──owns──▶ samplers + DesktopSurface ─┘
   current line from playback position. Synced lines render in an auto-following
   `ListView`; untimed lyrics render as scrollable text.
 - **Calendar:** reads `~/.config/omarchy/calendars.json` (names+colors only,
-  30s refresh). No network fetch — dates come from the local clock.
+  30s refresh). No network fetch for the front face.
+- **Agenda (card back):** `scripts/macos-glass-agenda` downloads enabled
+  http(s) feed URLs (plain `url` or Google `googleCalendarId` private ICS),
+  10s timeout, 512 KiB cap, 2000-VEVENT cap per feed. Parses VEVENTs
+  (timezones via zoneinfo, `VALUE=DATE` all-day), expands simple recurrence
+  (`FREQ=DAILY|WEEKLY|MONTHLY|YEARLY` + `INTERVAL`/`COUNT`/`UNTIL`/weekly
+  `BYDAY`, `EXDATE` honored, `RECURRENCE-ID` overrides skipped), sorts and
+  caps at 50 events over a 14-day window. Refreshed every 15 min while the
+  card is shown, plus a manual refresh button. Self-test:
+  `scripts/macos-glass-agenda --selftest` (wired into `check.sh`).
 - **Todos:** stored in the plugin's own bar entry (`todos`, max 50×200 chars).
 
 ## 3. Adding a widget

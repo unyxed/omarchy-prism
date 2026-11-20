@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+- Flippable calendar: double-click reveals a live agenda from Google
+  Calendar ICS feeds (bounded fetch, recurrence + timezones, 14-day window,
+  15-min refresh, manual refresh button)
+
 ## 0.5.0
 
 - Free placement: left-drag any card to move it (clicks on buttons and

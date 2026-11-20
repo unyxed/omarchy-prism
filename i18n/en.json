@@ -9,5 +9,13 @@
   "media.instrumental": "Instrumental ♪",
   "media.flipback": "Double-click to flip back",
   "calendar.feeds": { "one": "%1 calendar", "other": "%1 calendars" },
+  "calendar.upcoming": "Upcoming",
+  "calendar.searching": "Loading events…",
+  "calendar.nothing": "No upcoming events",
+  "calendar.nofeed": "Add a feed URL in calendars.json",
+  "calendar.allday": "All day",
+  "calendar.today": "Today",
+  "calendar.tomorrow": "Tomorrow",
+  "calendar.flipback": "Double-click to flip back",
   "todo.empty": "No reminders yet. Add your first below."
 }

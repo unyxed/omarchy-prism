@@ -5,11 +5,16 @@ import qs.Commons as Commons
 // macOS Calendar Widget with 2 selectable styles:
 //   - "split": Left column with weekday, large date, calendar feeds; right column with month grid
 //   - "month": Centered full-width month grid with big month header (mac-aesthetic-3 look)
+//
+// Double-click flips the card: the reverse side is a live agenda pulled from
+// the Google Calendar ICS feeds in ~/.config/omarchy/calendars.json.
 GlassCard {
   id: root
 
   property var calendar: null
   property string calendarStyle: "split"
+  property bool flipped: false
+
 
   property date now: new Date()
   readonly property var loc: Qt.locale(Commons.I18n.formatLocale)
@@ -19,6 +24,10 @@ GlassCard {
   readonly property string monthTitle: loc.toString(now, "MMMM")
   readonly property var feeds: calendar ? calendar.calendars : []
   readonly property int enabledCount: calendar ? calendar.enabledCount : 0
+
+  readonly property var agenda: calendar ? calendar.agendaEvents : []
+  readonly property string agendaState: calendar ? String(calendar.agendaState || "") : ""
+  readonly property int agendaFeeds: calendar ? Number(calendar.agendaFeeds || 0) : 0
 
   readonly property var dayHeaders: ["S", "M", "T", "W", "T", "F", "S"]
 
@@ -32,6 +41,36 @@ GlassCard {
     for (var d = 1; d <= daysInMonth; d++) out.push(d)
     while (out.length % 7 !== 0) out.push(0)
     return out
+  }
+
+  function dayLabel(iso) {
+    var day = String(iso || "").substring(0, 10)
+    if (day === "") return ""
+    var t = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    var parts = day.split("-")
+    if (parts.length !== 3) return day
+    var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+    if (isNaN(d.getTime())) return day
+    var diff = Math.round((d - t) / 86400000)
+    if (diff === 0) return root.strings.t("calendar.today")
+    if (diff === 1) return root.strings.t("calendar.tomorrow")
+    if (diff > 1 && diff < 7) return loc.toString(d, "dddd")
+    return loc.toString(d, "d MMM")
+  }
+
+  function timeRange(ev) {
+    if (!ev) return ""
+    if (ev.allDay) return root.strings.t("calendar.allday")
+    var s = String(ev.start || "")
+    var e = String(ev.end || "")
+    var st = s.length >= 16 ? s.substring(11, 16) : ""
+    var en = e.length >= 16 ? e.substring(11, 16) : ""
+    if (st === "") return ""
+    return en !== "" && en !== st ? st + "–" + en : st
+  }
+
+  function pressRefresh() {
+    if (calendar && typeof calendar.fetchAgenda === "function") calendar.fetchAgenda()
   }
 
   property Timer ticker: Timer {
@@ -97,123 +136,338 @@ GlassCard {
     }
   }
 
-  // ==================== STYLE 1: SPLIT ====================
-  Row {
+  Flipable {
+    id: flipper
     width: parent.width
-    visible: root.calendarStyle === "split"
-    spacing: Style.spacing.md
+    // Fixed at the taller side so the turn animates in place with zero
+    // layout motion (no per-frame resizes, no sibling reflow).
+    height: Math.max(frontCol.implicitHeight, backCol.implicitHeight)
+    Behavior on height { NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic } }
 
-    Column {
-      id: leftCol
-      width: Math.round(parent.width * 0.38)
-      spacing: Style.space(2)
+    // Flipable paints both sides unconditionally, so visibility is switched
+    // explicitly at the edge-on point.
+    readonly property bool showingFront: {
+      var a = ((flipRot.angle % 360) + 360) % 360
+      return a <= 90 || a >= 270
+    }
 
-      Text {
-        width: parent.width
-        textFormat: Text.PlainText
-        text: root.weekdayUpper
-        color: root.accent
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
-        font.bold: true
-        font.letterSpacing: 1.0
-        elide: Text.ElideRight
-      }
+    front: Item {
+      anchors.fill: parent
+      visible: flipper.showingFront
 
-      Text {
-        width: parent.width
-        textFormat: Text.PlainText
-        text: String(root.todayDay)
-        color: root.fg
-        font.family: root.fontFamily
-        font.pixelSize: Math.round(Style.font.title * 1.35)
-        font.bold: true
+      MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        onDoubleClicked: root.flipped = !root.flipped
       }
 
       Column {
+        id: frontCol
         width: parent.width
-        spacing: Style.space(3)
+        anchors.verticalCenter: parent.verticalCenter
 
-        Text {
+        // ==================== STYLE 1: SPLIT ====================
+        Row {
           width: parent.width
-          visible: root.feeds.length === 0
-          textFormat: Text.PlainText
-          text: root.strings.tn("calendar.feeds", root.enabledCount).arg(Commons.I18n.formatNumber(root.enabledCount, 0))
-          color: root.dim
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
-          elide: Text.ElideRight
-        }
+          visible: root.calendarStyle === "split"
+          spacing: Style.spacing.md
 
-        Repeater {
-          model: Math.min(3, root.feeds.length)
-          Row {
-            width: leftCol.width
-            spacing: Style.space(5)
-            Rectangle {
-              width: Style.space(6)
-              height: Style.space(6)
-              radius: width / 2
-              anchors.verticalCenter: parent.verticalCenter
-              color: root.feeds[index] && !root.feeds[index].enabled
-                ? Util.alpha(root.dim, 0.5)
-                : String(root.feeds[index].color || "#888888").substring(0, 16)
-            }
+          Column {
+            id: leftCol
+            width: Math.round(parent.width * 0.38)
+            spacing: Style.space(2)
+
             Text {
-              width: parent.width - Style.space(11)
+              width: parent.width
               textFormat: Text.PlainText
-              text: root.feeds[index] ? root.feeds[index].name : ""
-              color: root.feeds[index] && !root.feeds[index].enabled ? root.dim : root.fg
+              text: root.weekdayUpper
+              color: root.accent
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
+              font.bold: true
+              font.letterSpacing: 1.0
               elide: Text.ElideRight
-              maximumLineCount: 1
             }
+
+            Text {
+              width: parent.width
+              textFormat: Text.PlainText
+              text: String(root.todayDay)
+              color: root.fg
+              font.family: root.fontFamily
+              font.pixelSize: Math.round(Style.font.title * 1.35)
+              font.bold: true
+            }
+
+            Column {
+              width: parent.width
+              spacing: Style.space(3)
+
+              Text {
+                width: parent.width
+                visible: root.feeds.length === 0
+                textFormat: Text.PlainText
+                text: root.strings.tn("calendar.feeds", root.enabledCount).arg(Commons.I18n.formatNumber(root.enabledCount, 0))
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                elide: Text.ElideRight
+              }
+
+              Repeater {
+                model: Math.min(3, root.feeds.length)
+                Row {
+                  width: leftCol.width
+                  spacing: Style.space(5)
+                  Rectangle {
+                    width: Style.space(6)
+                    height: Style.space(6)
+                    radius: width / 2
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: root.feeds[index] && !root.feeds[index].enabled
+                      ? Util.alpha(root.dim, 0.5)
+                      : String(root.feeds[index].color || "#888888").substring(0, 16)
+                  }
+                  Text {
+                    width: parent.width - Style.space(11)
+                    textFormat: Text.PlainText
+                    text: root.feeds[index] ? root.feeds[index].name : ""
+                    color: root.feeds[index] && !root.feeds[index].enabled ? root.dim : root.fg
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.caption
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                  }
+                }
+              }
+            }
+          }
+
+          Column {
+            width: parent.width - leftCol.width - parent.spacing
+            spacing: Style.space(4)
+
+            Text {
+              width: parent.width
+              textFormat: Text.PlainText
+              text: root.monthUpper
+              color: root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+              font.bold: true
+              font.letterSpacing: 1.1
+            }
+
+            MonthMatrix {
+              width: parent.width
+            }
+          }
+        }
+
+        // ==================== STYLE 2: MONTH ONLY ====================
+        Column {
+          width: parent.width
+          visible: root.calendarStyle === "month"
+          spacing: Style.space(4)
+
+          Text {
+            width: parent.width
+            textFormat: Text.PlainText
+            text: root.monthTitle
+            color: Util.alpha(root.fg, 0.72)
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.title
+            font.bold: true
+            horizontalAlignment: Text.AlignHCenter
+          }
+
+          MonthMatrix {
+            width: parent.width
           }
         }
       }
     }
 
-    Column {
-      width: parent.width - leftCol.width - parent.spacing
-      spacing: Style.space(4)
+    back: Item {
+      id: backRoot
+      anchors.fill: parent
+      visible: !flipper.showingFront
 
-      Text {
-        width: parent.width
-        textFormat: Text.PlainText
-        text: root.monthUpper
-        color: root.dim
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
-        font.bold: true
-        font.letterSpacing: 1.1
+      MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        onDoubleClicked: root.flipped = !root.flipped
       }
 
-      MonthMatrix {
+      Column {
+        id: backCol
         width: parent.width
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: Style.spacing.sm
+
+        Row {
+          width: parent.width
+          spacing: Style.spacing.sm
+
+          Text {
+            width: parent.width - refreshBtn.width - parent.spacing
+            anchors.verticalCenter: parent.verticalCenter
+            textFormat: Text.PlainText
+            text: root.strings.t("calendar.upcoming")
+            color: root.fg
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.subtitle
+            font.bold: true
+            elide: Text.ElideRight
+          }
+
+          Rectangle {
+            id: refreshBtn
+            width: Style.space(26)
+            height: Style.space(26)
+            radius: width / 2
+            anchors.verticalCenter: parent.verticalCenter
+            color: Util.alpha(root.fg, refreshArea.containsMouse ? 0.16 : 0.07)
+            border.width: Style.space(1)
+            border.color: Util.alpha(root.fg, 0.25)
+
+            Text {
+              anchors.centerIn: parent
+              textFormat: Text.PlainText
+              text: "⟳"
+              color: root.fg
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.body
+            }
+
+            MouseArea {
+              id: refreshArea
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.pressRefresh()
+            }
+          }
+        }
+
+        Text {
+          width: parent.width
+          visible: root.agendaState === "" || root.agendaState === "loading"
+          height: visible ? Style.space(96) : 0
+          textFormat: Text.PlainText
+          text: root.strings.t("calendar.searching")
+          color: root.dim
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignHCenter
+          verticalAlignment: Text.AlignVCenter
+          wrapMode: Text.WordWrap
+        }
+
+        Text {
+          width: parent.width
+          visible: root.agendaState === "none"
+          height: visible ? Style.space(96) : 0
+          textFormat: Text.PlainText
+          text: root.agendaFeeds === 0 ? root.strings.t("calendar.nofeed") : root.strings.t("calendar.nothing")
+          color: root.dim
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignHCenter
+          verticalAlignment: Text.AlignVCenter
+          wrapMode: Text.WordWrap
+        }
+
+        ListView {
+          id: backAgendaList
+          width: parent.width
+          visible: root.agendaState === "ready"
+          height: Style.space(150)
+          clip: true
+          model: root.agenda
+          spacing: Style.space(7)
+
+          delegate: Item {
+            width: backAgendaList.width
+            height: Math.max(agendaRow.implicitHeight, Style.space(30))
+
+            Row {
+              id: agendaRow
+              width: parent.width
+              spacing: Style.spacing.sm
+
+              Rectangle {
+                width: Style.space(8)
+                height: Style.space(8)
+                radius: width / 2
+                anchors.verticalCenter: parent.verticalCenter
+                color: String(modelData.color || "#888888").substring(0, 16)
+              }
+
+              Column {
+                width: parent.width - Style.space(8) - parent.spacing
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Style.space(1)
+
+                Text {
+                  width: parent.width
+                  textFormat: Text.PlainText
+                  text: String(modelData.title || "")
+                  color: root.fg
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.body
+                  font.bold: true
+                  elide: Text.ElideRight
+                  maximumLineCount: 1
+                }
+
+                Text {
+                  width: parent.width
+                  textFormat: Text.PlainText
+                  text: root.dayLabel(modelData.start) + " · " + root.timeRange(modelData)
+                    + (modelData.calendar ? " · " + modelData.calendar : "")
+                  color: root.dim
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.caption
+                  elide: Text.ElideRight
+                  maximumLineCount: 1
+                }
+              }
+            }
+          }
+        }
+
+        Text {
+          width: parent.width
+          textFormat: Text.PlainText
+          text: root.strings.t("calendar.flipback")
+          color: root.dim
+          font.family: root.fontFamily
+          font.pixelSize: Math.max(9, Style.font.caption - 2)
+          font.italic: true
+          horizontalAlignment: Text.AlignHCenter
+        }
       }
     }
-  }
 
-  // ==================== STYLE 2: MONTH ONLY ====================
-  Column {
-    width: parent.width
-    visible: root.calendarStyle === "month"
-    spacing: Style.space(4)
-
-    Text {
-      width: parent.width
-      textFormat: Text.PlainText
-      text: root.monthTitle
-      color: Util.alpha(root.fg, 0.72)
-      font.family: root.fontFamily
-      font.pixelSize: Style.font.title
-      font.bold: true
-      horizontalAlignment: Text.AlignHCenter
+    transform: Rotation {
+      id: flipRot
+      origin.x: flipper.width / 2
+      origin.y: flipper.height / 2
+      axis.x: 0
+      axis.y: 1
+      axis.z: 0
+      angle: 0
     }
 
-    MonthMatrix {
-      width: parent.width
+    states: State {
+      name: "back"
+      when: root.flipped
+      PropertyChanges { target: flipRot; angle: 180 }
+    }
+
+    transitions: Transition {
+      NumberAnimation { target: flipRot; property: "angle"; duration: Style.duration(320); easing.type: Easing.OutCubic }
     }
   }
 }

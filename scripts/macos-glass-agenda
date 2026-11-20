@@ -1,0 +1,388 @@
+#!/usr/bin/env python3
+# Agenda fetcher for macOS Glass Widgets (Google Calendar via private ICS).
+#
+# Reads ~/.config/omarchy/calendars.json, downloads every enabled entry with
+# an http(s) feed URL (plain `url` or Google `googleCalendarId` private ICS),
+# and prints one JSON object to stdout:
+#   {"events": [{"title","start","end","allDay","calendar","color"}], "feeds": n, "errors": n}
+# Times are local ISO `YYYY-MM-DDTHH:MM`. Window: now-15min .. +14 days, max
+# 50 events, sorted. Exit 0 always (empty events = nothing found), non-zero
+# only for usage errors.
+#
+# Bounds: 10 s timeout, 512 KiB cap, max 2000 VEVENTs per feed, fixed
+# https/http schemes only. Recurrence supports FREQ=DAILY|WEEKLY|MONTHLY|
+# YEARLY with INTERVAL/COUNT/UNTIL and weekly BYDAY; EXDATE is honoured;
+# RECURRENCE-ID overrides are skipped (documented limitation).
+import datetime
+import json
+import os
+import sys
+import urllib.parse
+import urllib.request
+
+TIMEOUT = 10
+MAX_BYTES = 512 * 1024
+MAX_EVENTS_PER_FEED = 2000
+WINDOW_DAYS = 14
+MAX_OUT = 50
+USER_AGENT = "unyxed-macos-glass/0.6.0 (Omarchy desktop widget)"
+WEEKDAYS = {"MO": 0, "TU": 1, "WE": 2, "TH": 3, "FR": 4, "SA": 5, "SU": 6}
+
+
+def zone_of(tzid):
+    if not tzid:
+        return None
+    try:
+        from zoneinfo import ZoneInfo
+        return ZoneInfo(tzid)
+    except Exception:
+        return None
+
+
+def parse_dt(value, params, default_tz):
+    """Returns (datetime, all_day). Naive = floating local time."""
+    value = (value or "").strip()
+    if not value:
+        return None, False
+    if params.get("VALUE") == "DATE" or (len(value) == 8 and value.isdigit()):
+        try:
+            return datetime.datetime.strptime(value[:8], "%Y%m%d"), True
+        except ValueError:
+            return None, False
+    try:
+        if value.endswith("Z"):
+            dt = datetime.datetime.strptime(value[:-1].split(".")[0], "%Y%m%dT%H%M%S")
+            return dt.replace(tzinfo=datetime.timezone.utc).astimezone(), False
+        core = value.split(".")[0]
+        dt = datetime.datetime.strptime(core, "%Y%m%dT%H%M%S")
+        tz = zone_of(params.get("TZID"))
+        if tz is not None:
+            dt = dt.replace(tzinfo=tz).astimezone()
+        elif default_tz is not None:
+            dt = dt.replace(tzinfo=default_tz).astimezone()
+        return dt, False
+    except ValueError:
+        return None, False
+
+
+def split_prop(line):
+    """'DTSTART;TZID=X:value' -> ('DTSTART', {'TZID':'X'}, 'value')."""
+    head, _, value = line.partition(":")
+    parts = head.split(";")
+    params = {}
+    for part in parts[1:]:
+        k, _, v = part.partition("=")
+        params[k.strip()] = v.strip().strip('"')
+    return parts[0].strip(), params, value
+
+
+def unescape(text):
+    return text.replace("\\\\", "\\").replace("\\n", "\n").replace("\\N", "\n").replace("\\;", ";").replace("\\,", ",")
+
+
+def parse_ics(text, default_tz):
+    events = []
+    cur = None
+    for raw in text.replace("\r\n", "\n").replace("\r", "\n").split("\n"):
+        if raw[:1] in (" ", "\t"):
+            if cur is not None and cur["_buf"] is not None:
+                cur["_buf"] += raw[1:]
+            continue
+        if cur is not None and cur["_buf"] is not None:
+            name, params, value = split_prop(cur["_buf"])
+            cur["props"].append((name, params, value))
+            cur["_buf"] = None
+        line = raw.strip()
+        if not line:
+            continue
+        if line == "BEGIN:VEVENT":
+            cur = {"props": [], "_buf": None}
+        elif line == "END:VEVENT":
+            if cur is not None:
+                if cur["_buf"] is not None:
+                    name, params, value = split_prop(cur["_buf"])
+                    cur["props"].append((name, params, value))
+                events.append(cur["props"])
+                if len(events) >= MAX_EVENTS_PER_FEED:
+                    break
+            cur = None
+        elif cur is not None:
+            cur["_buf"] = line
+    out = []
+    for props in events:
+        ev = {"summary": "", "dtstart": None, "dtend": None, "allday": False,
+              "rrule": "", "exdates": [], "recurrence": False, "uid": ""}
+        for name, params, value in props:
+            if name == "SUMMARY":
+                ev["summary"] = value
+            elif name == "UID":
+                ev["uid"] = value
+            elif name == "DTSTART":
+                dt, ad = parse_dt(value, params, default_tz)
+                ev["dtstart"] = dt
+                ev["allday"] = ev["allday"] or ad
+            elif name == "DTEND":
+                dt, ad = parse_dt(value, params, default_tz)
+                ev["dtend"] = dt
+                ev["allday"] = ev["allday"] or ad
+            elif name == "RRULE":
+                ev["rrule"] = value
+            elif name == "EXDATE":
+                for part in value.split(","):
+                    dt, _ = parse_dt(part, params, default_tz)
+                    if dt is not None:
+                        ev["exdates"].append(dt.replace(second=0, microsecond=0))
+            elif name == "RECURRENCE-ID":
+                ev["recurrence"] = True
+        if ev["recurrence"] or ev["dtstart"] is None:
+            continue
+        out.append(ev)
+    return out
+
+
+def parse_rrule(raw):
+    rule = {}
+    for part in (raw or "").split(";"):
+        k, _, v = part.partition("=")
+        rule[k.strip().upper()] = v.strip()
+    return rule
+
+
+def expand(ev, win_start, win_end):
+    """Yield (start, end) occurrences inside the window."""
+    start = ev["dtstart"].replace(second=0, microsecond=0)
+    if start.tzinfo is None:
+        # All-day (VALUE=DATE) events carry no zone; anchor them to the
+        # window's local zone so naive/aware comparisons never mix.
+        start = start.replace(tzinfo=win_start.tzinfo)
+    if ev["allday"]:
+        dur = datetime.timedelta(days=1)
+    elif ev["dtend"] is not None:
+        dur = max(ev["dtend"] - ev["dtstart"], datetime.timedelta(0))
+    else:
+        dur = datetime.timedelta(hours=1)
+    excluded = set(ev["exdates"])
+    if not ev["rrule"]:
+        if start < win_end and start + dur > win_start and start not in excluded:
+            yield start, start + dur
+        return
+    rule = parse_rrule(ev["rrule"])
+    freq = rule.get("FREQ", "")
+    if freq not in ("DAILY", "WEEKLY", "MONTHLY", "YEARLY"):
+        if start < win_end and start + dur > win_start and start not in excluded:
+            yield start, start + dur
+        return
+    try:
+        interval = max(int(rule.get("INTERVAL", "1") or "1"), 1)
+    except ValueError:
+        interval = 1
+    count = None
+    try:
+        if rule.get("COUNT"):
+            count = max(int(rule["COUNT"]), 0)
+    except ValueError:
+        count = None
+    until = None
+    if rule.get("UNTIL"):
+        u, _ = parse_dt(rule["UNTIL"], {}, start.tzinfo)
+        if u is not None:
+            until = u.replace(second=0, microsecond=0)
+    byday = set()
+    if freq == "WEEKLY" and rule.get("BYDAY"):
+        for tok in rule["BYDAY"].split(","):
+            tok = tok.strip().upper()[-2:]
+            if tok in WEEKDAYS:
+                byday.add(WEEKDAYS[tok])
+    step = {"DAILY": datetime.timedelta(days=1),
+            "WEEKLY": datetime.timedelta(days=1),
+            "MONTHLY": None, "YEARLY": None}[freq]
+    occ = start
+    made = 0
+    guard = 0
+    anchor_day = start.day
+    anchor_month = start.month
+    while guard < 2000:
+        guard += 1
+        if count is not None and made >= count:
+            break
+        if until is not None and occ.replace(tzinfo=None) > until.replace(tzinfo=None):
+            break
+        if occ > win_end and (count is None or made > 0) and occ - start > datetime.timedelta(days=370):
+            break
+        if occ > win_end and until is None and count is None:
+            break
+        match = True
+        days = (occ.date() - start.date()).days
+        if freq == "DAILY":
+            if days % interval != 0:
+                match = False
+        elif freq == "WEEKLY":
+            if (days // 7) % interval != 0:
+                match = False
+            elif byday and occ.weekday() not in byday:
+                match = False
+        if match:
+            made += 1
+            if occ < win_end and occ + dur > win_start and occ not in excluded:
+                yield occ, occ + dur
+            if count is not None and made >= count:
+                break
+        if freq in ("DAILY", "WEEKLY"):
+            occ += step
+        else:
+            m = occ.month - 1 + (12 * interval if freq == "YEARLY" else interval)
+            y = occ.year + m // 12
+            m = m % 12 + 1
+            import calendar as _cal
+            last = _cal.monthrange(y, m)[1]
+            d = min(anchor_day if freq == "MONTHLY" else start.day, last)
+            try:
+                occ = occ.replace(year=y, month=m, day=d)
+            except ValueError:
+                break
+            _ = anchor_month
+    return
+
+
+def String(v):
+    return v if isinstance(v, str) else ""
+
+
+def fetch(url):
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as res:
+        if res.status != 200:
+            return None
+        body = res.read(MAX_BYTES + 1)
+        if len(body) > MAX_BYTES or not body:
+            return None
+        return body.decode("utf-8", errors="strict")
+
+
+def load_calendars(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
+
+
+def collect(cal_path, now=None):
+    now = now or datetime.datetime.now().astimezone()
+    win_start = now - datetime.timedelta(minutes=15)
+    win_end = now + datetime.timedelta(days=WINDOW_DAYS)
+    default_tz = now.tzinfo
+    feeds = errors = 0
+    found = []
+    for entry in load_calendars(cal_path):
+        if not isinstance(entry, dict) or not entry.get("enabled", True):
+            continue
+        url = entry.get("url") or entry.get("googleCalendarId") or ""
+        if not isinstance(url, str):
+            continue
+        url = url.strip()
+        if not url.lower().startswith(("https://", "http://")):
+            continue
+        name = str(entry.get("name") or "Calendar")[:80]
+        color = str(entry.get("color") or "#888888")[:16]
+        feeds += 1
+        try:
+            text = fetch(url)
+            if text is None:
+                errors += 1
+                continue
+        except Exception:
+            errors += 1
+            continue
+        for ev in parse_ics(text, default_tz):
+            title = unescape(ev["summary"]).strip().split("\n")[0][:200]
+            if not title:
+                continue
+            for s, e in expand(ev, win_start, win_end):
+                found.append({
+                    "title": title,
+                    "start": s.strftime("%Y-%m-%dT%H:%M"),
+                    "end": e.strftime("%Y-%m-%dT%H:%M"),
+                    "allDay": bool(ev["allday"]),
+                    "calendar": name,
+                    "color": color,
+                })
+    found.sort(key=lambda r: r["start"])
+    return {"events": found[:MAX_OUT], "feeds": feeds, "errors": errors}
+
+
+def selftest():
+    sample = """BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:single-1
+DTSTART:20300106T140000Z
+DTEND:20300106T150000Z
+SUMMARY:Kickoff \\, Q1
+END:VEVENT
+BEGIN:VEVENT
+UID:allday-1
+DTSTART;VALUE=DATE:20300107
+SUMMARY:All day thing
+END:VEVENT
+BEGIN:VEVENT
+UID:recur-1
+DTSTART;TZID=America/New_York:20300105T090000
+DTEND;TZID=America/New_York:20300105T093000
+RRULE:FREQ=WEEKLY;BYDAY=MO,WE;COUNT=4
+EXDATE;TZID=America/New_York:20300107T090000
+SUMMARY:Standup
+END:VEVENT
+BEGIN:VEVENT
+UID:recur-1
+RECURRENCE-ID;TZID=America/New_York:20300107T090000
+DTSTART;TZID=America/New_York:20300107T100000
+SUMMARY:Standup moved
+END:VEVENT
+BEGIN:VEVENT
+UID:fold-1
+DTSTART:20300108T120000
+SUMMARY:Very long title that folds
+ across lines
+END:VEVENT
+END:VCALENDAR"""
+    now = datetime.datetime(2030, 1, 4, 12, 0, tzinfo=datetime.timezone.utc).astimezone()
+    evs = []
+    for ev in parse_ics(sample, now.tzinfo):
+        for s, e in expand(ev, now - datetime.timedelta(minutes=15),
+                           now + datetime.timedelta(days=14)):
+            evs.append((ev, s, e))
+    assert len(evs) >= 1, "single event missing: %r" % (evs,)
+    single = [x for x in evs if x[0]["uid"] == "single-1"]
+    utc = datetime.timezone.utc
+    assert len(single) == 1 and single[0][1].astimezone(utc).strftime("%H:%M") == "14:00", single
+    assert single[0][0]["summary"] == "Kickoff \\, Q1", single[0][0]["summary"]
+    assert unescape("A\\, B\\; C\\\\ D\\nE") == "A, B; C\\ D\nE", "text escapes"
+    allday = [x for x in evs if x[0]["uid"] == "allday-1"]
+    assert len(allday) == 1, allday
+    recur = sorted([x for x in evs if x[0]["uid"] == "recur-1"], key=lambda x: x[1])
+    # COUNT=4 weekly MO/WE from Sat Jan 5 -> Mon 7 (EXDATEd), Wed 9, Mon 14, Wed 16
+    assert len(recur) == 3, [str(x[1]) for x in recur]
+    assert [x[1].day for x in recur] == [9, 14, 16], [str(x[1]) for x in recur]
+    fold = [x for x in evs if x[0]["uid"] == "fold-1"]
+    assert len(fold) == 1 and fold[0][0]["summary"] == "Very long title that foldsacross lines", fold
+    # RECURRENCE-ID override skipped
+    assert not any(x[0]["summary"] == "Standup moved" for x in evs)
+    print("agenda selftest: %d occurrences OK" % len(evs))
+
+
+def main(argv):
+    if "--selftest" in argv[1:]:
+        selftest()
+        return 0
+    home = os.environ.get("HOME", "")
+    path = os.path.join(home, ".config", "omarchy", "calendars.json") if home else ""
+    try:
+        print(json.dumps(collect(path)))
+    except Exception:
+        print(json.dumps({"events": [], "feeds": 0, "errors": 1}))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

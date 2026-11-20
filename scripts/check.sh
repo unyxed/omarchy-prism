@@ -8,6 +8,7 @@ FAIL=0
 echo "--- node unit tests ---"
 node tests/test_sanitize.js > /dev/null 2>&1 || { echo "FAIL tests/test_sanitize.js"; FAIL=1; }
 node tests/test_lyrics.js > /dev/null 2>&1 || { echo "FAIL tests/test_lyrics.js"; FAIL=1; }
+python3 scripts/macos-glass-agenda --selftest > /dev/null 2>&1 || { echo "FAIL agenda selftest"; FAIL=1; }
 node tests/test_settings.js > /dev/null 2>&1 || { echo "FAIL tests/test_settings.js"; FAIL=1; }
 [ $FAIL -eq 0 ] && echo "unit tests: PASS"
 

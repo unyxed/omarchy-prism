@@ -17,6 +17,8 @@ compositor plugin is installed.
   calendar: Split / Month
 - **Flippable music card** — double-click the card to flip it over:
   lyrics on the back of Cover / Poster / Vinyl, cover on the back of Lyrics
+- **Flippable calendar** — double-click to flip it over: live agenda from
+  your Google Calendar feeds, with refresh button
 - **Free placement** — drag any card with the left mouse button to put it
   anywhere on the desktop (right-drag works too); drag a corner to resize
 - **Album art** fetched safely (bounded download, magic-byte verified)
