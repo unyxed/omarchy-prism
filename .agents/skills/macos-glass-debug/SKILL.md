@@ -115,6 +115,14 @@ require `omarchy restart shell`. Popup-only edits apply on rescan.
   content vertically so the shorter side sits naturally.
 - One `Component.onCompleted` per object. A duplicated handler (e.g. from
   a temp test edit) warns `Property value set multiple times`.
+- One-time first-flip stutter is a cold paint: a back face gated by
+  `visible:` is never *painted* before the first flip, so its shaders
+  (`MultiEffect`/layers), delegates and glyphs compile during that first
+  animation and later flips run warm. Fix by warming: paint the back once
+  at startup under `opacity: 0` for ~150 ms, then revert to the visibility
+  gating. Screenshot bursts cannot measure frame pacing — the honest
+  verification is that the warm-up runs warning-free and the mechanism
+  removes the only cold path.
 
 ## 6. Verifying a flip visually without touching the desktop
 

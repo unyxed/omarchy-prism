@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.3
+
+- Fix one-time first-flip stutter: the back face was never painted before
+  the first flip, so shaders/delegates compiled mid-animation; both flip
+  cards now warm the back invisibly at startup
+
 ## 0.7.2
 
 - Right-button-only dragging: left-drag removed so move, resize and

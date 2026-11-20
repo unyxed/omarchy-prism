@@ -103,6 +103,20 @@ GlassCard {
     // Flipable paints both sides unconditionally, so visibility is switched
     // explicitly at the edge-on point. Inner columns keep measuring while
     // hidden, so the height binding above stays valid on both sides.
+    // First-flip warm-up: `visible: showingFront` means the back face is
+    // never painted before the first flip, so its shaders (MultiEffect on
+    // the mini-cover), delegates and glyphs would all compile *during*
+    // that first animation — the classic one-time stutter. Paint the back
+    // once at startup under opacity 0 (invisible), then revert to the
+    // cheap visibility gating. Steady-state cost is unchanged.
+    property bool warmingBack: true
+    Timer {
+      interval: 150
+      running: flipper.warmingBack
+      repeat: false
+      onTriggered: flipper.warmingBack = false
+    }
+
     readonly property bool showingFront: {
       var a = ((flipRot.angle % 360) + 360) % 360
       return a <= 90 || a >= 270
@@ -579,7 +593,8 @@ GlassCard {
     back: Item {
       id: backRoot
       anchors.fill: parent
-      visible: !flipper.showingFront
+      visible: !flipper.showingFront || flipper.warmingBack
+      opacity: flipper.warmingBack && flipper.showingFront ? 0 : 1
 
       Column {
         id: backCol

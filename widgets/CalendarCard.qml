@@ -16,6 +16,7 @@ GlassCard {
   property bool flipped: false
 
 
+
   onDoubleClicked: root.flipped = !root.flipped
 
 
@@ -149,6 +150,17 @@ GlassCard {
 
     // Flipable paints both sides unconditionally, so visibility is switched
     // explicitly at the edge-on point.
+    // First-flip warm-up: same rationale as MediaCard — paint the back
+    // once at startup under opacity 0 so the first user flip is not the
+    // first *paint* of that face.
+    property bool warmingBack: true
+    Timer {
+      interval: 150
+      running: flipper.warmingBack
+      repeat: false
+      onTriggered: flipper.warmingBack = false
+    }
+
     readonly property bool showingFront: {
       var a = ((flipRot.angle % 360) + 360) % 360
       return a <= 90 || a >= 270
@@ -288,7 +300,8 @@ GlassCard {
     back: Item {
       id: backRoot
       anchors.fill: parent
-      visible: !flipper.showingFront
+      visible: !flipper.showingFront || flipper.warmingBack
+      opacity: flipper.warmingBack && flipper.showingFront ? 0 : 1
 
       Column {
         id: backCol
