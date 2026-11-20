@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.1
+
+- Flip height follows the visible face (plus explicit user resizes):
+  no more permanent dead space from pinning the taller face
+
 ## 0.8.0
 
 - Flippable system card: per-core bar strips removed from the front;

@@ -109,10 +109,12 @@ require `omarchy restart shell`. Popup-only edits apply on rescan.
   stops following the pointer until the next press (looks like lag, then a
   jump on re-press). Gate `refreshSurfaces()` on interaction state and flush
   deferred rebuilds after release.
-- Flipable sizing: fix the height at `max(front, back)` for the whole flip.
-  Animating height per side forces per-frame layer-surface resizes plus a
-  full sibling reflow underneath the rotation — reads as stutter. Center
-  content vertically so the shorter side sits naturally.
+- Flipable sizing: height follows the *visible* face, never `max()` of both.
+  Pinning the taller face leaves permanent dead space on the short one
+  (reported as a bug). Keep every state of each face at one constant height
+  so data arriving late (lyrics, agenda) never resizes the card, and honor
+  an explicit user resize minus the frame. A short height animation during
+  the turn is fine; a permanently oversized card is not.
 - One `Component.onCompleted` per object. A duplicated handler (e.g. from
   a temp test edit) warns `Property value set multiple times`.
 - One-time first-flip stutter is a cold paint: a back face gated by

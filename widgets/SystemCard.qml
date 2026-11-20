@@ -15,6 +15,7 @@ GlassCard {
   property bool flipped: false
 
 
+
   onDoubleClicked: root.flipped = !root.flipped
 
   readonly property real cpuLoad: system ? system.cpuLoad : -1
@@ -39,7 +40,12 @@ GlassCard {
     width: parent.width
     // Fixed at the taller side so the turn animates in place with zero
     // layout motion (no per-frame resizes, no sibling reflow).
-    height: Math.max(frontCol.implicitHeight, backCol.implicitHeight)
+    // Follows the visible face (never max): pinning the taller face leaves
+    // dead space on the short one. Honors an explicit user resize minus the
+    // card frame, with faces centered inside; content taller than a resized
+    // frame clips until reset.
+    height: root.cardH > 0 ? Math.max(Style.space(40), root.cardH - 2 * root.pad)
+      : (root.flipped ? backCol.implicitHeight : frontCol.implicitHeight)
     Behavior on height { NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic } }
 
     // Flipable paints both sides unconditionally, so visibility is switched

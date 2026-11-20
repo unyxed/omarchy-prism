@@ -97,7 +97,12 @@ GlassCard {
     // motion (no per-frame surface resizes, no sibling reflow), which is what
     // keeps the animation smooth. Height still animates on style/content
     // changes via the Behavior below.
-    height: Math.max(frontCol.implicitHeight, backCol.implicitHeight)
+    // Follows the visible face (never max): pinning the taller face leaves
+    // dead space on the short one. Honors an explicit user resize minus the
+    // card frame, with faces centered inside; content taller than a resized
+    // frame clips until reset.
+    height: root.cardH > 0 ? Math.max(Style.space(40), root.cardH - 2 * root.pad)
+      : (root.flipped ? backCol.implicitHeight : frontCol.implicitHeight)
     Behavior on height { NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic } }
 
     // Flipable paints both sides unconditionally, so visibility is switched
