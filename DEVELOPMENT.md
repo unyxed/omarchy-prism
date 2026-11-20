@@ -93,6 +93,14 @@ Service.qml ──owns──▶ samplers + DesktopSurface ─┘
   card is shown, plus a manual refresh button. Self-test:
   `scripts/macos-glass-agenda --selftest` (wired into `check.sh`).
 - **Todos:** stored in the plugin's own bar entry (`todos`, max 50×200 chars).
+- **Photos:** runtime data, not code. `photos: [{id, path}]` (max 12,
+  extension-allowlisted in `normalizePhotos`) renders one `WlrLayer.Bottom`
+  surface per entry with ids namespaced `photo.<id>` so stored
+  positions/sizes can never collide with widget ids. `DesktopSurface`
+  stacks `displayWidgets` (widgets minus `photos`, plus photo ids) and
+  resolves paths via `photoEntryFor`. Files come only from the system file
+  picker (`omarchy file select`), validated as regular non-symlink files
+  ≤ 20 MiB before persisting; rendering caps decode size for large photos.
 
 ## 3. Adding a widget
 

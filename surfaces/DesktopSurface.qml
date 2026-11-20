@@ -28,6 +28,30 @@ Item {
   signal todoToggled(string id)
 
   readonly property var widgets: config && config.widgets ? config.widgets : []
+  readonly property var photoEntries: config && config.photos ? config.photos : []
+
+  // Stack widgets first (canonical order), then one surface per photo entry.
+  // Photo ids are namespaced ("photo.<id>") so drag/resize/tooltip keys in
+  // shell.json can never collide with widget ids.
+  readonly property var displayWidgets: {
+    var out = []
+    var list = root.widgets
+    for (var i = 0; i < list.length; i++)
+      if (list[i] !== "photos") out.push(list[i])
+    if (list.indexOf("photos") !== -1) {
+      var photos = root.photoEntries
+      for (var j = 0; j < photos.length; j++)
+        if (photos[j] && photos[j].id) out.push("photo." + String(photos[j].id))
+    }
+    return out
+  }
+
+  function photoEntryFor(id) {
+    var list = root.photoEntries
+    for (var i = 0; i < list.length; i++)
+      if (list[i] && ("photo." + String(list[i].id)) === String(id)) return list[i]
+    return null
+  }
   readonly property bool mediaPresent: media ? media.hasMedia : false
   onMediaPresentChanged: root.refreshSurfaces()
   onMediaChanged: root.refreshSurfaces()
@@ -78,7 +102,7 @@ Item {
 
   function flowEntries() {
     var out = []
-    var list = root.widgets
+    var list = root.displayWidgets || []
     for (var i = 0; i < list.length; i++) {
       var id = list[i]
       if (id === "media" && config.hideMediaWhenIdle && media && !media.hasMedia) continue
@@ -181,14 +205,23 @@ Item {
     if (id === "media") return "../widgets/MediaCard.qml"
     if (id === "calendar") return "../widgets/CalendarCard.qml"
     if (id === "todo") return "../widgets/TodoCard.qml"
+    if (String(id).indexOf("photo.") === 0) return "../widgets/PhotoCard.qml"
     return ""
   }
 
   function configure(item, id, screen) {
     if (!item) return
     item.widgetId = id
-    item.title = Layout.widgetName(id)
-    item.glyph = Layout.widgetGlyph(id)
+    if (String(id).indexOf("photo.") === 0) {
+      // Photo tiles are chromeless; the header stays off for them.
+      item.title = ""
+      item.glyph = ""
+      var entry = root.photoEntryFor(id)
+      item.filePath = entry ? String(entry.path || "") : ""
+    } else {
+      item.title = Layout.widgetName(id)
+      item.glyph = Layout.widgetGlyph(id)
+    }
     item.showHeader = Qt.binding(function () { return root.config.showLabels })
     item.bgOpacity = Qt.binding(function () { return root.config.opacity })
     item.cardRadius = Qt.binding(function () { return root.config.radius })
@@ -238,7 +271,7 @@ Item {
 
   function surfacesSignature() {
     var screens = root.targetScreens
-    var list = root.widgets
+    var list = root.displayWidgets || []
     var parts = []
     for (var s = 0; s < screens.length; s++)
       for (var i = 0; i < list.length; i++)
@@ -252,7 +285,7 @@ Item {
     root.surfacesKey = key
     var out = []
     var screens = root.targetScreens
-    var list = root.widgets
+    var list = root.displayWidgets || []
     for (var s = 0; s < screens.length; s++)
       for (var i = 0; i < list.length; i++)
         if (root.isVisible(list[i])) out.push({ screen: screens[s], id: list[i] })
@@ -260,6 +293,7 @@ Item {
   }
 
   onWidgetsChanged: root.refreshSurfaces()
+  onDisplayWidgetsChanged: root.refreshSurfaces()
   onTargetScreensChanged: root.refreshSurfaces()
   Component.onCompleted: root.refreshSurfaces()
 

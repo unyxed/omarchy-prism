@@ -21,6 +21,9 @@ Rectangle {
   property real cardW: 280
   property real cardH: 0
   property bool resizable: true
+  // Full-bleed content (photo tiles): the body spans edge to edge under the
+  // rounded clip instead of sitting inside the padded frame.
+  property bool fullBleed: false
 
   signal resizePreview(string id, real w, real h)
   signal resizeCommit(string id, real w, real h)
@@ -81,7 +84,7 @@ Rectangle {
   width: cardW
   height: cardH > 0 ? cardH : implicitHeight
   implicitWidth: cardW
-  implicitHeight: column.implicitHeight + pad * 2
+  implicitHeight: column.implicitHeight + (fullBleed ? 0 : pad * 2)
   radius: cardRadius
   color: Util.alpha(Color.popups.background, bgOpacity)
   border.width: Style.space(1)
@@ -104,9 +107,9 @@ Rectangle {
 
   Column {
     id: column
-    x: root.pad
-    y: root.pad
-    width: root.width - root.pad * 2
+    x: fullBleed ? 0 : root.pad
+    y: fullBleed ? 0 : root.pad
+    width: fullBleed ? root.width : root.width - root.pad * 2
     spacing: Style.spacing.sm
 
     Row {

@@ -28,6 +28,14 @@ assert(n.intervalMs === 500, "interval clamped low");
 n = S.normalize({ todos: [{ id: "a", text: "x".repeat(500), done: 1 }, { text: "   " }, "nope"] });
 assert(n.todos.length === 1 && n.todos[0].text.length === 200, "todos bounded and cleaned");
 
+n = S.normalize({ photos: [{ id: "unique-id", path: "/x/y.jpg" }] });
+assert(n.photos.length === 1, "valid photo passes through");
+let manyPhotos = [];
+for (let i = 0; i < 20; i++) manyPhotos.push({ id: "p" + i, path: "/x/" + i + ".png" });
+n = S.normalize({ photos: manyPhotos });
+assert(n.photos.length === 12, "photos capped at 12");
+n = S.normalize({ photos: [{ id: "badext", path: "/x/y.txt" }, { id: "", path: "/x/z.png" }, "nope", { id: "ok", path: "/x/w.WEBP" }] });
+assert(n.photos.length === 1 && n.photos[0].id === "ok", "photos bounded to real image extensions with ids");
 n = S.normalize({ positions: { system: { x: 1e9, y: "bad" } } });
 assert(JSON.stringify(n.positions) === JSON.stringify({}), "bad positions dropped");
 

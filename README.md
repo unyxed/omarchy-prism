@@ -21,6 +21,7 @@ compositor plugin is installed.
   your Google Calendar feeds, with refresh button
 - **Free placement** — drag any card with the left mouse button to put it
   anywhere on the desktop (right-drag works too); drag a corner to resize
+- **Photo widgets** — add your own pictures as macOS-style photo tiles
 - **Album art** fetched safely (bounded download, magic-byte verified)
 - **Right-drag to move, corner-drag to resize** — positions persist
 - **Reminders** stored locally, toggled from the desktop, added from the bar popup

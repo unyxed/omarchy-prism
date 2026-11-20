@@ -59,7 +59,7 @@ Panel {
     if (at === -1) list.push(id)
     else list.splice(at, 1)
     // Keep canonical order from Settings known widgets:
-    var order = ["clock", "system", "gpu", "media", "calendar", "todo"]
+    var order = Settings.KNOWN_WIDGETS.slice()
     var seen = {}
     for (var i = 0; i < list.length; i++) seen[list[i]] = true
     var out = []
@@ -123,6 +123,66 @@ Panel {
     function onResizeCommitted(id, w, h) { root.writeSizes(id, w, h) }
     function onPositionCommitted(id, x, y) { root.writePositions(id, x, y) }
     function onTodoToggleRequested(id) { root.toggleTodo(id) }
+  }
+
+  function removePhoto(id) {
+    var list = config.photos ? config.photos.slice() : []
+    var out = []
+    for (var i = 0; i < list.length; i++)
+      if (String(list[i].id) !== String(id)) out.push(list[i])
+    write({ photos: out })
+  }
+
+  // Photo flow: system picker -> extension + duplicate guard -> size/regular
+  // file check in a fixed command (path travels as data in $1, never
+  // interpolated into shell) -> persist. Max 12 photos.
+  property string pendingPhotoPath: ""
+
+  function addPhoto() {
+    if (photoPicker.running || photoValidator.running) return
+    photoPicker.command = ["omarchy", "file", "select",
+      "--title", "Choose a photo",
+      "--extensions", "jpg jpeg png webp gif bmp avif"]
+    photoPicker.running = true
+  }
+
+  function gotPickedPhoto(raw) {
+    var path = String(raw || "").split("\n")[0].trim()
+    if (path === "") return
+    var dot = path.lastIndexOf(".")
+    var ext = dot !== -1 ? path.substring(dot + 1).toLowerCase() : ""
+    if (["jpg", "jpeg", "png", "webp", "gif", "bmp", "avif"].indexOf(ext) === -1) return
+    var list = config.photos ? config.photos.slice() : []
+    if (list.length >= 12) return
+    for (var i = 0; i < list.length; i++)
+      if (String(list[i].path) === path) return
+    root.pendingPhotoPath = path
+    photoValidator.command = ["bash", "-c",
+      'p="$1"; [ -f "$p" ] && [ ! -L "$p" ] && [ "$(stat -c%s "$p")" -le 20971520 ]',
+      "photo-check", path]
+    photoValidator.running = true
+  }
+
+  Process {
+    id: photoPicker
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: root.gotPickedPhoto(text)
+    }
+  }
+
+  Process {
+    id: photoValidator
+    onExited: function (code) {
+      if (code === 0 && root.pendingPhotoPath !== "") {
+        var list = root.config.photos ? root.config.photos.slice() : []
+        if (list.length < 12) {
+          list.push({ id: "p" + Date.now() + "_" + Math.floor(Math.random() * 100000), path: root.pendingPhotoPath })
+          root.write({ photos: list })
+        }
+      }
+      root.pendingPhotoPath = ""
+    }
   }
 
   function probeGlass() {
@@ -229,12 +289,15 @@ Panel {
           glassAvailable: root.glassAvailable
           todos: root.config.todos
           todoRows: root.config.todoRows
+          photos: root.config.photos
           onWidgetToggled: function (id) { root.toggleWidget(id) }
           onPositionPicked: function (position) { root.write({ position: position }) }
           onSettingChanged: function (key, value) { root.writeOne(key, value) }
           onFlagToggled: function (key) { root.writeOne(key, !root.config[key]) }
           onTodoToggled: function (id) { root.toggleTodo(id) }
           onTodoAdded: function (text) { root.addTodo(text) }
+          onPhotoAddRequested: function () { root.addPhoto() }
+          onPhotoRemoved: function (id) { root.removePhoto(id) }
           onResetLayoutRequested: function () { root.write({ positions: ({}), sizes: ({}) }) }
           onInstallGlassRequested: root.installGlass()
         }

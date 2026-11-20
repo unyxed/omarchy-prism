@@ -10,6 +10,7 @@ Column {
   property bool glassAvailable: false
   property var todos: []
   property int todoRows: 5
+  property var photos: []
 
   signal widgetToggled(string id)
   signal positionPicked(string position)
@@ -17,6 +18,8 @@ Column {
   signal flagToggled(string key)
   signal todoToggled(string id)
   signal todoAdded(string text)
+  signal photoAddRequested()
+  signal photoRemoved(string id)
   signal resetLayoutRequested()
   signal installGlassRequested()
 
@@ -91,6 +94,15 @@ Column {
     checked: root.widgetEnabled("todo")
     foreground: root.foreground
     onClicked: root.widgetToggled("todo")
+  }
+
+  Toggle {
+    width: parent.width
+    label: "Photos"
+    description: "Your pictures as desktop tiles. Add as many as you like."
+    checked: root.widgetEnabled("photos")
+    foreground: root.foreground
+    onClicked: root.widgetToggled("photos")
   }
 
   SectionHeader { title: "Widget Styles" }
@@ -302,6 +314,12 @@ Column {
     onClicked: root.flagToggled("hideMediaWhenIdle")
   }
 
+  function baseName(path) {
+    var p = String(path || "")
+    var i = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"))
+    return p.substring(i + 1)
+  }
+
   readonly property int openTodos: {
     var n = 0
     for (var i = 0; i < root.todos.length; i++) if (!root.todos[i].done) n++
@@ -405,6 +423,82 @@ Column {
         }
       }
     }
+  }
+
+  Spacer { width: parent.width }
+
+  SectionHeader { title: "Photos"; detail: root.photos.length + " / 12" }
+
+  Column {
+    width: parent.width
+    spacing: Style.spacing.xs
+
+    Text {
+      width: parent.width
+      visible: root.photos.length === 0
+      textFormat: Text.PlainText
+      text: "No photos yet. Add your first below — drag the tile anywhere, drag its corner to resize it."
+      color: root.dim
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.caption
+      wrapMode: Text.WordWrap
+    }
+
+    Repeater {
+      model: root.photos
+
+      Row {
+        width: parent.width
+        spacing: Style.spacing.sm
+
+        Rectangle {
+          width: Style.space(40)
+          height: Style.space(40)
+          radius: Style.space(8)
+          color: Util.alpha(root.foreground, 0.07)
+          clip: true
+          anchors.verticalCenter: parent.verticalCenter
+
+          Image {
+            anchors.fill: parent
+            source: modelData && modelData.path ? "file://" + modelData.path : ""
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            cache: true
+            sourceSize.width: 160
+            sourceSize.height: 160
+          }
+        }
+
+        Text {
+          width: parent.width - Style.space(40) - removePhotoBtn.implicitWidth - parent.spacing * 2
+          textFormat: Text.PlainText
+          text: modelData ? root.baseName(modelData.path) : ""
+          color: root.foreground
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.body
+          elide: Text.ElideMiddle
+          maximumLineCount: 1
+          anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Button {
+          id: removePhotoBtn
+          text: "✕"
+          anchors.verticalCenter: parent.verticalCenter
+          onClicked: root.photoRemoved(String(modelData.id))
+        }
+      }
+    }
+  }
+
+  Spacer { width: parent.width }
+
+  Button {
+    width: parent.width
+    text: root.photos.length >= 12 ? "Photo limit reached (12)" : "Add photo…"
+    enabled: root.photos.length < 12
+    onClicked: root.photoAddRequested()
   }
 
   Spacer { width: parent.width }

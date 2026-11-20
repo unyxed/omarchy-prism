@@ -6,6 +6,7 @@ function widgetName(id) {
   if (id === "media") return "VinylPod"
   if (id === "calendar") return "Calendar"
   if (id === "todo") return "Reminders"
+  if (id === "photos") return "Photos"
   return String(id)
 }
 
@@ -16,6 +17,7 @@ function widgetGlyph(id) {
   if (id === "media") return "\uF001"
   if (id === "calendar") return "\uF073"
   if (id === "todo") return "\uF0AE"
+  if (id === "photos") return "\uF03E"
   return "\uF111"
 }
 

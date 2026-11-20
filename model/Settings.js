@@ -7,8 +7,9 @@ var WIDGET_GPU = "gpu"
 var WIDGET_MEDIA = "media"
 var WIDGET_CALENDAR = "calendar"
 var WIDGET_TODO = "todo"
+var WIDGET_PHOTOS = "photos"
 
-var KNOWN_WIDGETS = [WIDGET_CLOCK, WIDGET_SYSTEM, WIDGET_GPU, WIDGET_MEDIA, WIDGET_CALENDAR, WIDGET_TODO]
+var KNOWN_WIDGETS = [WIDGET_CLOCK, WIDGET_SYSTEM, WIDGET_GPU, WIDGET_MEDIA, WIDGET_CALENDAR, WIDGET_TODO, WIDGET_PHOTOS]
 
 var POSITIONS = [
   "top-left", "top-center", "top-right",
@@ -42,6 +43,7 @@ var DEFAULTS = {
   preferredPlayer: "",
   todoRows: 5,
   todos: [],
+  photos: [],
   mediaStyle: "cover",
   clockStyle: "hero",
   systemStyle: "rings",
@@ -131,6 +133,26 @@ function normalizeTodos(value) {
   return out
 }
 
+var PHOTO_EXTS = ["jpg", "jpeg", "png", "webp", "gif", "bmp", "avif"]
+var MAX_PHOTOS = 12
+
+function normalizePhotos(value) {
+  var list = asList(value)
+  var out = []
+  for (var i = 0; i < Math.min(list.length, MAX_PHOTOS); i++) {
+    var entry = list[i]
+    if (!isPlainObject(entry)) continue
+    var id = String(entry.id || "").substring(0, 64)
+    if (id === "") continue
+    var path = String(entry.path || "").substring(0, 1024)
+    var dot = path.lastIndexOf(".")
+    var ext = dot !== -1 ? path.substring(dot + 1).toLowerCase() : ""
+    if (PHOTO_EXTS.indexOf(ext) === -1) continue
+    out.push({ id: id, path: path })
+  }
+  return out
+}
+
 function pickChoice(value, allowed, fallback) {
   var s = String(value || "")
   return allowed.indexOf(s) !== -1 ? s : fallback
@@ -171,6 +193,7 @@ function normalize(raw) {
   out.preferredPlayer = typeof value.preferredPlayer === "string" ? value.preferredPlayer.substring(0, 64) : ""
   out.todoRows = clamp(value.todoRows, 1, 20, DEFAULTS.todoRows)
   out.todos = normalizeTodos(value.todos !== undefined ? value.todos : DEFAULTS.todos)
+  out.photos = normalizePhotos(value.photos !== undefined ? value.photos : DEFAULTS.photos)
   out.mediaStyle = pickChoice(value.mediaStyle, MEDIA_STYLES, DEFAULTS.mediaStyle)
   out.clockStyle = pickChoice(value.clockStyle, CLOCK_STYLES, DEFAULTS.clockStyle)
   out.systemStyle = pickChoice(value.systemStyle, SYSTEM_STYLES, DEFAULTS.systemStyle)

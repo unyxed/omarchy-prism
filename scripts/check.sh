@@ -32,7 +32,7 @@ d = json.loads(out)
 md = m['defaults']
 mismatch = [k for k in d if k not in md or md[k] != d[k]]
 sk = {s['key'] for s in m['schema']}
-uncovered = [k for k in d if k not in ('widgets', 'positions', 'sizes', 'todos') and k not in sk]
+uncovered = [k for k in d if k not in ('widgets', 'positions', 'sizes', 'todos', 'photos') and k not in sk]
 if mismatch or uncovered:
     print("FAIL manifest/Settings drift:", mismatch, uncovered)
     sys.exit(1)

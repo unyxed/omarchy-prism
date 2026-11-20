@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0
+
+- Photo widgets: add your own pictures as desktop tiles via the bar popup
+  (system file picker, extension + size + regular-file validation, max 12),
+  edge-to-edge rounded display, free drag placement, corner resize
+
 ## 0.6.0
 
 - Flippable calendar: double-click reveals a live agenda from Google
