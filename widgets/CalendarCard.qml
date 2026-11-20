@@ -15,6 +15,7 @@ GlassCard {
   property string calendarStyle: "split"
   property bool flipped: false
 
+
   onDoubleClicked: root.flipped = !root.flipped
 
 

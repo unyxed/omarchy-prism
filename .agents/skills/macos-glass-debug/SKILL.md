@@ -116,7 +116,22 @@ require `omarchy restart shell`. Popup-only edits apply on rescan.
 - One `Component.onCompleted` per object. A duplicated handler (e.g. from
   a temp test edit) warns `Property value set multiple times`.
 
-## 6. After any fix
+## 6. Verifying a flip visually without touching the desktop
+
+Cards can't be double-clicked by automation, so prove the turn with a
+temporary auto-flip timer plus screenshot bursts (this exact protocol
+caught the mirrored-back and vertical-squash bugs):
+1. Add a temporary `property Timer flipTest: Timer { interval: 1100;
+   running: true; repeat: true; onTriggered: root.flipped = !root.flipped }`
+   to the card (count the marker lines — duplicates warn).
+2. Restart the shell (card widgets only reload on restart, never rescan).
+3. `grim -g "<card region>"` in a burst loop; compare frames.
+4. Assert: both faces readable (never mirrored), identical card rect on
+   front and back shots (no reflow — neighbors must not budge a pixel),
+   zero `macos-glass` log lines.
+5. Delete the timer, verify zero matches remain, restart, re-verify.
+
+## 7. After any fix
 
 `./scripts/check.sh`, restart-or-rescan per section 3, then re-run the
 section-0 baseline: entry populated, full-size surfaces, zero log warnings.
