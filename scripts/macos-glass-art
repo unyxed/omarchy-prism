@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Bounded album-art fetcher for macOS Glass Widgets.
+#
+# $1 source: an https/http URL, or a file:// URL of a local file
+# $2 destination path (under the plugin's runtime directory)
+# $3 max bytes (default 1 MiB)
+#
+# Neither kind of cover reaches an Image as the player gave it. A remote one is
+# downloaded by curl, which stops an oversized or stalled response at the
+# socket. A local one is copied under a timeout, because a path is not safer
+# than a URL: a FIFO with no writer would park Qt's single image-reader thread
+# for good. The output must be a real image by its own magic bytes, or it is
+# deleted and rejected.
+set -u
+src="${1:-}"
+dest="${2:-}"
+max="${3:-1048576}"
+[ -n "$src" ] || exit 2
+[ -n "$dest" ] || exit 2
+mkdir -p "$(dirname -- "$dest")" || exit 2
+
+case "$src" in
+  file://*)
+    path="${src#file://}"
+    # % escapes are decoded: the player wrote a URL, this wants a path.
+    decoded=$(printf '%b' "${path//%/\\x}")
+    [ -f "$decoded" ] || exit 3
+    timeout 3 dd if="$decoded" of="$dest" bs=8192 count=$((max / 8192 + 1)) 2>/dev/null || exit 4
+    ;;
+  http://*|https://*)
+    curl -sL --max-time 8 --max-filesize "$max" -o "$dest" -- "$src" || exit 5
+    ;;
+  *)
+    exit 6
+    ;;
+esac
+
+[ -s "$dest" ] || exit 7
+magic=$(dd if="$dest" bs=1 count=12 2>/dev/null | od -A n -t x1 | tr -d ' \n')
+case "$magic" in
+  89504e47*|ffd8ff*|47494638*)
+    exit 0
+    ;;
+  52494646*)
+    # RIFF: WEBP lives at bytes 8-11.
+    if [ "${magic:16:8}" = "57454250" ]; then exit 0; fi
+    rm -f -- "$dest"
+    exit 8
+    ;;
+  *)
+    rm -f -- "$dest"
+    exit 8
+    ;;
+esac

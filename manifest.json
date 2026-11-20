@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "id": "unyxed.macos-glass",
+  "name": "macOS Glass Widgets",
+  "version": "0.2.0",
+  "author": "unyxed",
+  "license": "MIT",
+  "description": "macOS-style desktop widgets with liquid-glass looks: oversized clock, CPU/RAM and GPU ring gauges, vinyl now-playing with album art, split month-grid calendar, and a fast reminders list. Theme-aware cards that turn into real liquid glass with hyprglass.",
+  "kinds": [
+    "service",
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "macOS Glass",
+    "description": "macOS-style liquid-glass desktop cards (clock, system, GPU, media, calendar, reminders) with per-card toggles and switchable widget styles.",
+    "category": "Widgets",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "widgets": [
+        "clock",
+        "system",
+        "gpu",
+        "media",
+        "calendar",
+        "todo"
+      ],
+      "positions": {},
+      "sizes": {},
+      "position": "top-left",
+      "marginX": 58,
+      "marginY": 24,
+      "cardWidth": 288,
+      "spacing": 14,
+      "opacity": 0.42,
+      "radius": 24,
+      "monitor": "",
+      "intervalMs": 2000,
+      "timeFormat": "24h",
+      "showDate": true,
+      "showLabels": false,
+      "showCpuCores": true,
+      "hideMediaWhenIdle": false,
+      "preferredPlayer": "",
+      "todoRows": 5,
+      "todos": [],
+      "mediaStyle": "cover",
+      "clockStyle": "hero",
+      "systemStyle": "rings",
+      "calendarStyle": "split"
+    },
+    "schema": [
+      {
+        "key": "position",
+        "type": "string",
+        "label": "Screen position",
+        "description": "top-left, top-center, top-right, middle-left, middle-right, bottom-left, bottom-center or bottom-right.",
+        "defaultValue": "top-left"
+      },
+      {
+        "key": "opacity",
+        "type": "number",
+        "label": "Card background opacity",
+        "description": "0.05 to 1. Lower values let more of the hyprglass liquid-glass effect through.",
+        "defaultValue": 0.42
+      },
+      {
+        "key": "cardWidth",
+        "type": "number",
+        "label": "Default widget width in pixels",
+        "defaultValue": 288
+      },
+      {
+        "key": "spacing",
+        "type": "number",
+        "label": "Gap between widgets in pixels",
+        "defaultValue": 14
+      },
+      {
+        "key": "marginX",
+        "type": "number",
+        "label": "Horizontal screen margin in pixels",
+        "defaultValue": 58
+      },
+      {
+        "key": "marginY",
+        "type": "number",
+        "label": "Vertical screen margin in pixels",
+        "defaultValue": 24
+      },
+      {
+        "key": "radius",
+        "type": "number",
+        "label": "Card corner radius in pixels",
+        "defaultValue": 24
+      },
+      {
+        "key": "intervalMs",
+        "type": "number",
+        "label": "Sampling interval in milliseconds",
+        "description": "500 to 60000. Sampling stops entirely while the widgets are hidden.",
+        "defaultValue": 2000
+      },
+      {
+        "key": "timeFormat",
+        "type": "string",
+        "label": "Clock",
+        "description": "24h or 12h.",
+        "defaultValue": "24h"
+      },
+      {
+        "key": "monitor",
+        "type": "string",
+        "label": "Limit the widgets to one monitor",
+        "description": "A connector name such as eDP-1. Leave empty for every monitor.",
+        "defaultValue": ""
+      },
+      {
+        "key": "showDate",
+        "type": "boolean",
+        "label": "Show the date under the clock",
+        "defaultValue": true
+      },
+      {
+        "key": "showLabels",
+        "type": "boolean",
+        "label": "Show widget titles",
+        "defaultValue": false
+      },
+      {
+        "key": "showCpuCores",
+        "type": "boolean",
+        "label": "Show a bar per CPU thread",
+        "defaultValue": true
+      },
+      {
+        "key": "hideMediaWhenIdle",
+        "type": "boolean",
+        "label": "Hide the media card when nothing is playing",
+        "defaultValue": false
+      },
+      {
+        "key": "preferredPlayer",
+        "type": "string",
+        "label": "Preferred media player",
+        "description": "Matched against the player name, for example 'spotify'. Leave empty to follow whatever is playing.",
+        "defaultValue": ""
+      },
+      {
+        "key": "todoRows",
+        "type": "number",
+        "label": "Reminders listed on the card",
+        "description": "1 to 20.",
+        "defaultValue": 5
+      },
+      {
+        "key": "mediaStyle",
+        "type": "string",
+        "label": "Music widget style",
+        "description": "cover, poster or vinyl.",
+        "defaultValue": "cover"
+      },
+      {
+        "key": "clockStyle",
+        "type": "string",
+        "label": "Clock widget style",
+        "description": "hero, glass or minimal.",
+        "defaultValue": "hero"
+      },
+      {
+        "key": "systemStyle",
+        "type": "string",
+        "label": "System and GPU widget style",
+        "description": "rings or bars.",
+        "defaultValue": "rings"
+      },
+      {
+        "key": "calendarStyle",
+        "type": "string",
+        "label": "Calendar widget style",
+        "description": "split or month.",
+        "defaultValue": "split"
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "bar.tooltip": "macOS Glass widgets",
+  "bar.hidden": "macOS Glass · hidden",
+  "gpu.absent": "No GPU sensor on this machine",
+  "media.idle": "Nothing playing",
+  "media.unknown": "Unknown track",
+  "calendar.feeds": { "one": "%1 calendar", "other": "%1 calendars" },
+  "todo.empty": "No reminders yet. Add your first below."
+}
