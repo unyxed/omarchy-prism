@@ -4,6 +4,11 @@ How this plugin works, how to change it safely, and how to keep it healthy.
 User-facing docs live in [README.md](README.md); publishing in
 [PUBLISHING.md](PUBLISHING.md).
 
+> **Agents:** load `AGENTS.md` first, then the matching skill under
+> `.agents/skills/` (`macos-glass-style`, `macos-glass-widget`,
+> `macos-glass-debug`). This guide is the human-readable companion; the
+> skills are the executable procedures.
+
 ## 1. Architecture
 
 Two QML entry points, one settings flow:
