@@ -508,7 +508,7 @@ Column {
   Text {
     width: parent.width
     textFormat: Text.PlainText
-    text: "Drag any card with the left mouse button to place it freely on the desktop — clicks on buttons and checkboxes still work. Drag a corner to resize."
+    text: "Right-drag any card to place it freely on the desktop — left-clicks stay reserved for buttons, checkboxes and double-click-to-flip. Drag a corner to resize."
     color: root.dim
     font.family: root.fontFamily
     font.pixelSize: Style.font.caption

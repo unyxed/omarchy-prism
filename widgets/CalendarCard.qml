@@ -340,10 +340,12 @@ GlassCard {
           }
         }
 
+        // Loading and empty states share the list height so the card never
+        // resizes when the agenda arrives mid-session.
         Text {
           width: parent.width
           visible: root.agendaState === "" || root.agendaState === "loading"
-          height: visible ? Style.space(96) : 0
+          height: visible ? Style.space(150) : 0
           textFormat: Text.PlainText
           text: root.strings.t("calendar.searching")
           color: root.dim
@@ -357,7 +359,7 @@ GlassCard {
         Text {
           width: parent.width
           visible: root.agendaState === "none"
-          height: visible ? Style.space(96) : 0
+          height: visible ? Style.space(150) : 0
           textFormat: Text.PlainText
           text: root.agendaFeeds === 0 ? root.strings.t("calendar.nofeed") : root.strings.t("calendar.nothing")
           color: root.dim

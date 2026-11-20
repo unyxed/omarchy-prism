@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.2
+
+- Right-button-only dragging: left-drag removed so move, resize and
+  double-click-to-flip never fight over the same gesture; drag areas are
+  explicit visual children (guaranteed event delivery)
+
 ## 0.7.1
 
 - Fix drag lag: left-drag now measures in global screen coordinates

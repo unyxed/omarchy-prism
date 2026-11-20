@@ -19,8 +19,9 @@ compositor plugin is installed.
   lyrics on the back of Cover / Poster / Vinyl, cover on the back of Lyrics
 - **Flippable calendar** — double-click to flip it over: live agenda from
   your Google Calendar feeds, with refresh button
-- **Free placement** — drag any card with the left mouse button to put it
-  anywhere on the desktop (right-drag works too); drag a corner to resize
+- **Free placement** — right-drag any card to put it anywhere on the desktop
+  (left clicks stay reserved for controls and double-click-to-flip);
+  drag a corner to resize
 - **Photo widgets** — add your own pictures as macOS-style photo tiles
 - **Album art** fetched safely (bounded download, magic-byte verified)
 - **Right-drag to move, corner-drag to resize** — positions persist

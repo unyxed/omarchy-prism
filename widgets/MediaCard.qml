@@ -477,11 +477,12 @@ GlassCard {
       }
     }
 
-    // Empty / loading / instrumental states
+    // Empty / loading / instrumental states (same height as the list so the
+    // card never resizes when lyrics arrive)
     Text {
       width: parent.width
       visible: !root.hasMedia || root.lyricsState === "" || root.lyricsState === "loading"
-      height: visible ? Style.space(120) : 0
+      height: visible ? Style.space(150) : 0
       textFormat: Text.PlainText
       text: !root.hasMedia ? root.strings.t("media.idle") : root.strings.t("media.searching")
       color: root.dim
@@ -495,7 +496,7 @@ GlassCard {
     Text {
       width: parent.width
       visible: root.hasMedia && (root.lyricsState === "none" || (root.lyricsState === "ready" && root.lyricsInstrumental && root.lyricsLines.length === 0 && root.lyricsPlainLines.length === 0))
-      height: visible ? Style.space(120) : 0
+      height: visible ? Style.space(150) : 0
       textFormat: Text.PlainText
       text: root.lyricsInstrumental ? root.strings.t("media.instrumental") : root.strings.t("media.nolyrics")
       color: root.dim
@@ -675,10 +676,12 @@ GlassCard {
             }
           }
 
+          // Empty / loading states share the list height so the card never
+          // resizes when lyrics arrive mid-session.
           Text {
             width: parent.width
             visible: !root.hasMedia || root.lyricsState === "" || root.lyricsState === "loading"
-            height: visible ? Style.space(84) : 0
+            height: visible ? Style.space(96) : 0
             textFormat: Text.PlainText
             text: !root.hasMedia ? root.strings.t("media.idle") : root.strings.t("media.searching")
             color: root.dim
@@ -692,7 +695,7 @@ GlassCard {
           Text {
             width: parent.width
             visible: root.hasMedia && (root.lyricsState === "none" || (root.lyricsState === "ready" && root.lyricsInstrumental && root.lyricsLines.length === 0 && root.lyricsPlainLines.length === 0))
-            height: visible ? Style.space(84) : 0
+            height: visible ? Style.space(96) : 0
             textFormat: Text.PlainText
             text: root.lyricsInstrumental ? root.strings.t("media.instrumental") : root.strings.t("media.nolyrics")
             color: root.dim

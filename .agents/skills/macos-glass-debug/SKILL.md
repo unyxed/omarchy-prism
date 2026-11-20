@@ -96,16 +96,15 @@ require `omarchy restart shell`. Popup-only edits apply on rescan.
   pattern as `AlbumArt`) or corners render square while the card chrome stays
   round.
 - Drag deltas must be measured in a frame that does not move with the drag.
-  `DragHandler.centroid` resolves in the handler's moving parent frame, so
-  driving a card's own position from it creates a feedback loop: the card
-  perpetually lags behind the cursor. Measure absolute deltas from the press
-  point in global screen coordinates (`mapToGlobal`, recomputed against the
-  stable pre-drag base every event), exactly like the right-button drag path.
-- Interactive pointer areas declared as named QML properties
-  (`property MouseArea x: MouseArea {...}`) may never join the visual tree,
-  so they silently receive no events even though anchors resolve. Prefer
-  direct visual children; where a default-property alias forbids that,
-  assign an explicit visual parent (`parent: root`).
+  Absolute global deltas from the press point (`mapToGlobal`, recomputed
+  against the stable pre-drag base every move event); never per-event
+  increments and never a moving frame (`DragHandler.centroid` resolves in
+  the handler's moving parent frame — a feedback loop that lags behind
+  the cursor). Dragging is right-button only by design, so move, resize
+  and double-click-to-flip never fight over one gesture.
+- Interactive pointer areas must be explicit visual children (`data:` list
+  on the card root — the default alias swallows bare children into the
+  content column, and property-held items may silently receive no events).
 - Rebuilding desktop surfaces mid-drag destroys the live grab: the card
   stops following the pointer until the next press (looks like lag, then a
   jump on re-press). Gate `refreshSurfaces()` on interaction state and flush

@@ -42,56 +42,39 @@ Rectangle {
 
   default property alias content: column.children
 
-  property MouseArea dragArea: MouseArea {
-    // Explicit visual parent: property-held items must be in the scene's
-    // visual tree to receive pointer events at all.
-    parent: root
-    anchors.fill: parent
-    acceptedButtons: Qt.RightButton
-    property point startGlobal: Qt.point(0, 0)
-    onPressed: function (mouse) {
-      startGlobal = dragArea.mapToGlobal(mouse.x, mouse.y)
+  // Pointer handling lives in `data` so these are direct visual children of
+  // the card: the default property alias would swallow bare children into
+  // the content column, and property-held MouseAreas may never join the
+  // visual tree at all (silently receiving no events). Declared first so
+  // content, buttons and the resize grip (later siblings) get first shot
+  // at every press. Dragging is right-button only, by design: it never
+  // interferes with left-click controls, text, or the corner grip.
+  data: [
+    MouseArea {
+      id: dragArea
+      anchors.fill: parent
+      acceptedButtons: Qt.RightButton
+      property point startGlobal: Qt.point(0, 0)
+      onPressed: function (mouse) {
+        startGlobal = dragArea.mapToGlobal(mouse.x, mouse.y)
+      }
+      onPositionChanged: function (mouse) {
+        if (!pressed) return
+        var now = dragArea.mapToGlobal(mouse.x, mouse.y)
+        root.movePreview(root.widgetId, now.x - startGlobal.x, now.y - startGlobal.y)
+      }
+      onReleased: function (mouse) {
+        var now = dragArea.mapToGlobal(mouse.x, mouse.y)
+        root.moveCommit(root.widgetId, now.x - startGlobal.x, now.y - startGlobal.y)
+      }
+    },
+    MouseArea {
+      id: flipCatcher
+      anchors.fill: parent
+      acceptedButtons: Qt.LeftButton
+      onDoubleClicked: root.doubleClicked()
     }
-    onPositionChanged: function (mouse) {
-      if (!pressed) return
-      var now = dragArea.mapToGlobal(mouse.x, mouse.y)
-      root.movePreview(root.widgetId, now.x - startGlobal.x, now.y - startGlobal.y)
-    }
-    onReleased: function (mouse) {
-      var now = dragArea.mapToGlobal(mouse.x, mouse.y)
-      root.moveCommit(root.widgetId, now.x - startGlobal.x, now.y - startGlobal.y)
-    }
-  }
-
-  // Left-button free placement, attached at card level. Deltas are measured
-  // in global screen coordinates (mapToGlobal), never in the card's own
-  // frame: measuring against a frame that moves with the drag creates a
-  // feedback loop where the card perpetually lags behind the cursor.
-  // Buttons and toggles in the content column sit above this area, so they
-  // keep receiving their clicks; only presses on empty card space start a
-  // move. Double-clicks (no drag) fall through to `doubleClicked`.
-  property MouseArea moveArea: MouseArea {
-    // Explicit visual parent: see dragArea above. Without this the area
-    // may never see presses, and no drag can start. Plain arrow cursor:
-    // the card moving under the pointer is feedback enough.
-    parent: root
-    anchors.fill: parent
-    acceptedButtons: Qt.LeftButton
-    property point startGlobal: Qt.point(0, 0)
-    onPressed: function (mouse) {
-      startGlobal = moveArea.mapToGlobal(mouse.x, mouse.y)
-    }
-    onPositionChanged: function (mouse) {
-      if (!pressed) return
-      var now = moveArea.mapToGlobal(mouse.x, mouse.y)
-      root.movePreview(root.widgetId, now.x - startGlobal.x, now.y - startGlobal.y)
-    }
-    onReleased: function (mouse) {
-      var now = moveArea.mapToGlobal(mouse.x, mouse.y)
-      root.moveCommit(root.widgetId, now.x - startGlobal.x, now.y - startGlobal.y)
-    }
-    onDoubleClicked: root.doubleClicked()
-  }
+  ]
 
   width: cardW
   height: cardH > 0 ? cardH : implicitHeight
