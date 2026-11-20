@@ -43,4 +43,13 @@ EOF
 echo "--- symlinks (forbidden by marketplace) ---"
 if [ -n "$(find . -type l)" ]; then echo "FAIL symlinks present:"; find . -type l; FAIL=1; else echo "symlinks: none"; fi
 
+echo "--- secret scan (private feeds, keys, tokens) ---"
+if grep -rniE "calendar/ical|private-[0-9a-f]{16,}|@gmail\.com|@googlemail\.com|AIza[0-9A-Za-z_-]{20,}|xox[bap]-|ghp_[0-9A-Za-z]{20,}|BEGIN PRIVATE KEY" . --exclude-dir=.git > /dev/null 2>&1; then
+  echo "FAIL possible secret in tree:"
+  grep -rniE "calendar/ical|private-[0-9a-f]{16,}|@gmail\.com|@googlemail\.com|AIza[0-9A-Za-z_-]{20,}|xox[bap]-|ghp_[0-9A-Za-z]{20,}|BEGIN PRIVATE KEY" . --exclude-dir=.git | head -n 10
+  FAIL=1
+else
+  echo "secrets: none found"
+fi
+
 [ $FAIL -eq 0 ] && echo "ALL CHECKS PASSED" || { echo "CHECKS FAILED"; exit 1; }

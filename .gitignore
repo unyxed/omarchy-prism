@@ -1,0 +1,7 @@
+# Local-only ignores. Nothing in this repo should ever contain credentials:
+# see the secret-scan in scripts/check.sh, which fails the suite if high-
+# signal secret patterns appear anywhere in the tree.
+*.log
+*.tmp
+*~
+.DS_Store
