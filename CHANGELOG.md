@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- Flippable music card: double-click flips cover/poster/vinyl to reveal
+  synced lyrics on the back (and back); animated 3D turn with height morph
+
 ## 0.3.0
 
 - Lyrics: 4th music style with Apple-Music-style scrolling synced lyrics,

@@ -15,6 +15,8 @@ compositor plugin is installed.
 - **Switchable styles per widget** — music: Cover / Poster / Vinyl / Lyrics;
   clock: Hero / Glass / Minimal; system & GPU: Rings / Bars;
   calendar: Split / Month
+- **Flippable music card** — double-click the card to flip it over:
+  lyrics on the back of Cover / Poster / Vinyl, cover on the back of Lyrics
 - **Album art** fetched safely (bounded download, magic-byte verified)
 - **Right-drag to move, corner-drag to resize** — positions persist
 - **Reminders** stored locally, toggled from the desktop, added from the bar popup

@@ -8,11 +8,15 @@ import qs.Ui
 //   - "poster": Full-card album art backdrop with frosted bottom glass overlay
 //   - "vinyl": Vinyl turntable where the album cover fills the entire record disc
 //   - "lyrics": Apple-Music-style scrolling lyrics with live line highlight
+//
+// Double-click anywhere on the card flips it like a tile: the reverse side
+// always shows the lyrics (or the cover when the front already shows lyrics).
 GlassCard {
   id: root
 
   property var media: null
   property string mediaStyle: "cover"
+  property bool flipped: false
 
   readonly property string trackTitle: media ? String(media.title || "") : ""
   readonly property string artist: media ? String(media.artist || "") : ""
@@ -82,6 +86,36 @@ GlassCard {
       onClicked: root.press("next")
     }
   }
+
+  Flipable {
+    id: flipper
+    width: parent.width
+    height: root.flipped ? backCol.implicitHeight : frontCol.implicitHeight
+    Behavior on height { NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic } }
+
+    // Flipable paints both sides unconditionally, so visibility is switched
+    // explicitly at the edge-on point. Inner columns keep measuring while
+    // hidden, so the height binding above stays valid on both sides.
+    readonly property bool showingFront: {
+      var a = ((flipRot.angle % 360) + 360) % 360
+      return a <= 90 || a >= 270
+    }
+
+    front: Item {
+      anchors.fill: parent
+      visible: flipper.showingFront
+
+      // Below the controls: buttons accept their own clicks first, empty
+      // areas fall through here for the double-click-to-flip gesture.
+      MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        onDoubleClicked: root.flipped = !root.flipped
+      }
+
+      Column {
+        id: frontCol
+        width: parent.width
 
   // ==================== STYLE 1: COVER (Large Square Cover + Progress) ====================
   Row {
@@ -475,6 +509,7 @@ GlassCard {
 
     // Synced lyrics: auto-following list with live highlight
     ListView {
+      id: frontLyricsList
       width: parent.width
       visible: root.hasMedia && root.lyricsState === "ready" && root.lyricsSynced
       height: Style.space(150)
@@ -488,14 +523,14 @@ GlassCard {
       spacing: Style.space(5)
 
       highlight: Rectangle {
-        width: ListView.view.width
+        width: frontLyricsList.width
         height: Style.space(22)
         radius: Style.space(7)
         color: Util.alpha(root.accent, 0.22)
       }
 
       delegate: Item {
-        width: ListView.view.width
+        width: frontLyricsList.width
         height: Math.max(lyricText.implicitHeight, Style.space(22))
 
         Text {
@@ -504,11 +539,11 @@ GlassCard {
           verticalAlignment: Text.AlignVCenter
           textFormat: Text.PlainText
           text: String(modelData.text || "")
-          color: index === ListView.view.currentIndex ? root.fg : root.dim
-          opacity: index === ListView.view.currentIndex ? 1.0 : (modelData.text === "" ? 0.35 : 0.75)
+          color: index === frontLyricsList.currentIndex ? root.fg : root.dim
+          opacity: index === frontLyricsList.currentIndex ? 1.0 : (modelData.text === "" ? 0.35 : 0.75)
           font.family: root.fontFamily
           font.pixelSize: Style.font.body
-          font.bold: index === ListView.view.currentIndex
+          font.bold: index === frontLyricsList.currentIndex
           elide: Text.ElideRight
           maximumLineCount: 1
         }
@@ -535,6 +570,248 @@ GlassCard {
         font.pixelSize: Style.font.body
         wrapMode: Text.WordWrap
       }
+    }
+  }
+      } // frontCol
+    } // front
+
+    back: Item {
+      id: backRoot
+      anchors.fill: parent
+      visible: !flipper.showingFront
+      transform: Rotation {
+        origin.x: backRoot.width / 2
+        origin.y: backRoot.height / 2
+        axis.x: 0
+        axis.y: 1
+        axis.z: 0
+        angle: 180
+      }
+
+      MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        onDoubleClicked: root.flipped = !root.flipped
+      }
+
+      Column {
+        id: backCol
+        width: parent.width
+        spacing: Style.spacing.sm
+
+        // Mini cover: the reverse side when the front already shows lyrics
+        Row {
+          width: parent.width
+          visible: root.mediaStyle === "lyrics"
+          spacing: Style.spacing.sm
+
+          Rectangle {
+            width: Style.space(56)
+            height: Style.space(56)
+            radius: Style.space(10)
+            color: Util.alpha(root.fg, 0.08)
+            border.width: Style.space(1)
+            border.color: Util.alpha("#ffffff", 0.18)
+
+            AlbumArt {
+              anchors.fill: parent
+              url: root.hasMedia ? root.artUrl : ""
+              round: false
+              cornerRadius: Style.space(10)
+            }
+          }
+
+          Column {
+            width: parent.width - Style.space(56) - parent.spacing
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Style.space(1)
+
+            Text {
+              width: parent.width
+              textFormat: Text.PlainText
+              text: root.hasMedia
+                ? (root.trackTitle !== "" ? root.trackTitle : root.strings.t("media.unknown"))
+                : root.strings.t("media.idle")
+              color: root.fg
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.body
+              font.bold: true
+              elide: Text.ElideRight
+              maximumLineCount: 1
+            }
+
+            Text {
+              width: parent.width
+              textFormat: Text.PlainText
+              text: root.hasMedia && root.artist !== "" ? root.artist : "Now Playing"
+              color: root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+              elide: Text.ElideRight
+              maximumLineCount: 1
+            }
+          }
+        }
+
+        // Compact lyrics: the reverse side of the cover/poster/vinyl fronts
+        Column {
+          width: parent.width
+          visible: root.mediaStyle !== "lyrics"
+          spacing: Style.spacing.xs
+
+          Row {
+            width: parent.width
+            spacing: Style.spacing.sm
+
+            Text {
+              width: parent.width - backPlayDot.implicitWidth - parent.spacing
+              textFormat: Text.PlainText
+              text: root.hasMedia
+                ? (root.trackTitle !== "" ? root.trackTitle + " — " + root.artist : root.strings.t("media.unknown"))
+                : root.strings.t("media.idle")
+              color: root.fg
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+              font.bold: true
+              elide: Text.ElideRight
+              maximumLineCount: 1
+              anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Text {
+              id: backPlayDot
+              textFormat: Text.PlainText
+              text: root.playing ? "●" : "○"
+              color: root.playing ? root.accent : root.dim
+              font.pixelSize: Style.font.caption
+              anchors.verticalCenter: parent.verticalCenter
+            }
+          }
+
+          Text {
+            width: parent.width
+            visible: !root.hasMedia || root.lyricsState === "" || root.lyricsState === "loading"
+            height: visible ? Style.space(84) : 0
+            textFormat: Text.PlainText
+            text: !root.hasMedia ? root.strings.t("media.idle") : root.strings.t("media.searching")
+            color: root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            wrapMode: Text.WordWrap
+          }
+
+          Text {
+            width: parent.width
+            visible: root.hasMedia && (root.lyricsState === "none" || (root.lyricsState === "ready" && root.lyricsInstrumental && root.lyricsLines.length === 0 && root.lyricsPlainLines.length === 0))
+            height: visible ? Style.space(84) : 0
+            textFormat: Text.PlainText
+            text: root.lyricsInstrumental ? root.strings.t("media.instrumental") : root.strings.t("media.nolyrics")
+            color: root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+            font.italic: true
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            wrapMode: Text.WordWrap
+          }
+
+          ListView {
+            id: backLyricsList
+            width: parent.width
+            visible: root.hasMedia && root.lyricsState === "ready" && root.lyricsSynced
+            height: Style.space(96)
+            clip: true
+            model: root.lyricsLines
+            currentIndex: root.lyricsIndex
+            preferredHighlightBegin: height / 2 - Style.space(10)
+            preferredHighlightEnd: height / 2 + Style.space(10)
+            highlightRangeMode: ListView.ApplyRange
+            highlightMoveDuration: Style.duration(220)
+            spacing: Style.space(3)
+
+            highlight: Rectangle {
+              width: backLyricsList.width
+              height: Style.space(20)
+              radius: Style.space(6)
+              color: Util.alpha(root.accent, 0.22)
+            }
+
+            delegate: Item {
+              width: backLyricsList.width
+              height: Math.max(backLyricText.implicitHeight, Style.space(20))
+
+              Text {
+                id: backLyricText
+                anchors.fill: parent
+                verticalAlignment: Text.AlignVCenter
+                textFormat: Text.PlainText
+                text: String(modelData.text || "")
+                color: index === backLyricsList.currentIndex ? root.fg : root.dim
+                opacity: index === backLyricsList.currentIndex ? 1.0 : (modelData.text === "" ? 0.35 : 0.75)
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                font.bold: index === backLyricsList.currentIndex
+                elide: Text.ElideRight
+                maximumLineCount: 1
+              }
+            }
+          }
+
+          Flickable {
+            width: parent.width
+            visible: root.hasMedia && root.lyricsState === "ready" && !root.lyricsSynced && root.lyricsPlainLines.length > 0
+            height: Style.space(96)
+            clip: true
+            contentWidth: width
+            contentHeight: backPlainText.implicitHeight
+            boundsBehavior: Flickable.StopAtBounds
+
+            Text {
+              id: backPlainText
+              width: parent.width
+              textFormat: Text.PlainText
+              text: root.lyricsPlainLines.join("\n")
+              color: root.fg
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+              wrapMode: Text.WordWrap
+            }
+          }
+        }
+
+        Text {
+          width: parent.width
+          textFormat: Text.PlainText
+          text: root.strings.t("media.flipback")
+          color: root.dim
+          font.family: root.fontFamily
+          font.pixelSize: Math.max(9, Style.font.caption - 2)
+          font.italic: true
+          horizontalAlignment: Text.AlignHCenter
+        }
+      }
+    }
+
+    transform: Rotation {
+      id: flipRot
+      origin.x: flipper.width / 2
+      origin.y: flipper.height / 2
+      axis.x: 0
+      axis.y: 1
+      axis.z: 0
+      angle: 0
+    }
+
+    states: State {
+      name: "back"
+      when: root.flipped
+      PropertyChanges { target: flipRot; angle: 180 }
+    }
+
+    transitions: Transition {
+      NumberAnimation { target: flipRot; property: "angle"; duration: Style.duration(320); easing.type: Easing.OutCubic }
     }
   }
 }
