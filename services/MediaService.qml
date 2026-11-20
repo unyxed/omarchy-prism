@@ -1,6 +1,8 @@
 import QtQuick
+import Quickshell.Io
 import Quickshell.Services.Mpris
 import "../model/Sanitize.js" as Sanitize
+import "../model/Lyrics.js" as Lyrics
 
 // Signal-driven MPRIS media service: attaches Connections to every player on
 // the bus so play/pause, track skips, cover art changes, and progress updates
@@ -124,6 +126,86 @@ Item {
   }
 
   readonly property real progress: length > 0 ? Math.max(0, Math.min(1, position / length)) : -1
+
+  // ---- Lyrics (LRClrc, fetched per track, cached per track key) ------------
+  // States: "" (nothing requested yet), "loading", "ready", "none".
+  property string lyricsState: ""
+  property string lyricsKey: ""
+  property string lyricsFetchedKey: ""
+  property bool lyricsInstrumental: false
+  property string lyricsSyncedRaw: ""
+  property string lyricsPlainRaw: ""
+
+  readonly property var lyricsLines: Lyrics.parseLrc(root.lyricsSyncedRaw)
+  readonly property var lyricsPlainLines: Lyrics.plainLines(root.lyricsPlainRaw)
+  readonly property bool lyricsSynced: lyricsLines.length > 0
+  readonly property int lyricsIndex: Lyrics.lineIndexAt(root.lyricsLines, root.position)
+
+  readonly property string trackKey: (root.title + "" + root.artist).substring(0, 245)
+
+  onTrackKeyChanged: {
+    root.lyricsKey = root.trackKey
+    root.lyricsState = ""
+    root.lyricsFetchedKey = ""
+    root.lyricsInstrumental = false
+    root.lyricsSyncedRaw = ""
+    root.lyricsPlainRaw = ""
+    if (!root.hasMedia || root.trackKey.trim() === "") {
+      lyricsDebounce.stop()
+      return
+    }
+    lyricsDebounce.restart()
+  }
+
+  Timer {
+    id: lyricsDebounce
+    interval: 800
+    onTriggered: {
+      if (!root.hasMedia || root.lyricsKey === "") return
+      if (root.lyricsFetchedKey === root.lyricsKey || lyricsFetch.running) return
+      root.lyricsState = "loading"
+      lyricsFetch.command = [
+        "python3", root.lyricsScript,
+        root.artist, root.title, root.album, String(Math.round(root.length))
+      ]
+      lyricsFetch.running = true
+    }
+  }
+
+  readonly property string lyricsScript: Qt.resolvedUrl("../scripts/macos-glass-lyrics").toString().replace(/^file:\/\//, "")
+
+  Process {
+    id: lyricsFetch
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: {
+        var key = root.lyricsKey
+        var parsed = null
+        try {
+          parsed = JSON.parse(String(text || ""))
+        } catch (e) {
+          parsed = null
+        }
+        if (!parsed || typeof parsed !== "object") {
+          root.lyricsFetchedKey = key
+          root.lyricsState = "none"
+          return
+        }
+        root.lyricsInstrumental = parsed.instrumental === true
+        root.lyricsSyncedRaw = String(parsed.synced || "").substring(0, 20000)
+        root.lyricsPlainRaw = String(parsed.plain || "").substring(0, 20000)
+        root.lyricsFetchedKey = key
+        root.lyricsState = (root.lyricsInstrumental || root.lyricsSyncedRaw !== "" || root.lyricsPlainRaw !== "")
+          ? "ready" : "none"
+      }
+    }
+    onExited: function (code) {
+      if (code !== 0 && root.lyricsFetchedKey !== root.lyricsKey) {
+        root.lyricsFetchedKey = root.lyricsKey
+        root.lyricsState = "none"
+      }
+    }
+  }
 
   function control(action) {
     var p = root.activePlayer

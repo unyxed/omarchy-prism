@@ -4,6 +4,9 @@
   "gpu.absent": "No GPU sensor on this machine",
   "media.idle": "Nothing playing",
   "media.unknown": "Unknown track",
+  "media.searching": "Searching lyrics…",
+  "media.nolyrics": "No lyrics found for this track",
+  "media.instrumental": "Instrumental ♪",
   "calendar.feeds": { "one": "%1 calendar", "other": "%1 calendars" },
   "todo.empty": "No reminders yet. Add your first below."
 }

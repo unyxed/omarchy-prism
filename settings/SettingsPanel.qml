@@ -101,7 +101,8 @@ Column {
     options: [
       { value: "cover", label: "Cover" },
       { value: "poster", label: "Poster" },
-      { value: "vinyl", label: "Vinyl" }
+      { value: "vinyl", label: "Vinyl" },
+      { value: "lyrics", label: "Lyrics" }
     ]
     onPicked: function (v) { root.settingChanged("mediaStyle", v) }
   }

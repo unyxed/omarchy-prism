@@ -3,10 +3,11 @@ import qs.Commons
 import qs.Commons as Commons
 import qs.Ui
 
-// macOS Media Widget with 3 selectable styles:
+// macOS Media Widget with 4 selectable styles:
 //   - "cover": Large rounded album art + title + artist + progress bar + controls
 //   - "poster": Full-card album art backdrop with frosted bottom glass overlay
 //   - "vinyl": Vinyl turntable where the album cover fills the entire record disc
+//   - "lyrics": Apple-Music-style scrolling lyrics with live line highlight
 GlassCard {
   id: root
 
@@ -25,6 +26,12 @@ GlassCard {
   readonly property real progress: media ? media.progress : -1
   readonly property real positionSec: media ? media.position : 0
   readonly property real lengthSec: media ? media.length : 0
+  readonly property string lyricsState: media ? String(media.lyricsState || "") : ""
+  readonly property bool lyricsSynced: media ? media.lyricsSynced === true : false
+  readonly property var lyricsLines: media ? media.lyricsLines : []
+  readonly property var lyricsPlainLines: media ? media.lyricsPlainLines : []
+  readonly property int lyricsIndex: media ? media.lyricsIndex : -1
+  readonly property bool lyricsInstrumental: media ? media.lyricsInstrumental === true : false
 
   function press(action) {
     if (media && typeof media.control === "function") media.control(action)
@@ -386,6 +393,147 @@ GlassCard {
 
       TransportControls {
         anchors.horizontalCenter: parent.horizontalCenter
+      }
+    }
+  }
+
+  // ==================== STYLE 4: LYRICS (Scrolling Lyrics + Highlight) ====================
+  Column {
+    width: parent.width
+    visible: root.mediaStyle === "lyrics"
+    spacing: Style.spacing.sm
+
+    Row {
+      width: parent.width
+      spacing: Style.spacing.sm
+
+      Column {
+        width: parent.width - lyricsCtrls.implicitWidth - parent.spacing
+        spacing: 0
+
+        Text {
+          width: parent.width
+          textFormat: Text.PlainText
+          text: root.hasMedia
+            ? (root.trackTitle !== "" ? root.trackTitle : root.strings.t("media.unknown"))
+            : root.strings.t("media.idle")
+          color: root.fg
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.body
+          font.bold: true
+          elide: Text.ElideRight
+          maximumLineCount: 1
+        }
+
+        Text {
+          width: parent.width
+          textFormat: Text.PlainText
+          text: root.hasMedia && root.artist !== "" ? root.artist : "Lyrics"
+          color: root.dim
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          elide: Text.ElideRight
+          maximumLineCount: 1
+        }
+      }
+
+      TransportControls {
+        id: lyricsCtrls
+        anchors.verticalCenter: parent.verticalCenter
+      }
+    }
+
+    // Empty / loading / instrumental states
+    Text {
+      width: parent.width
+      visible: !root.hasMedia || root.lyricsState === "" || root.lyricsState === "loading"
+      height: visible ? Style.space(120) : 0
+      textFormat: Text.PlainText
+      text: !root.hasMedia ? root.strings.t("media.idle") : root.strings.t("media.searching")
+      color: root.dim
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.caption
+      horizontalAlignment: Text.AlignHCenter
+      verticalAlignment: Text.AlignVCenter
+      wrapMode: Text.WordWrap
+    }
+
+    Text {
+      width: parent.width
+      visible: root.hasMedia && (root.lyricsState === "none" || (root.lyricsState === "ready" && root.lyricsInstrumental && root.lyricsLines.length === 0 && root.lyricsPlainLines.length === 0))
+      height: visible ? Style.space(120) : 0
+      textFormat: Text.PlainText
+      text: root.lyricsInstrumental ? root.strings.t("media.instrumental") : root.strings.t("media.nolyrics")
+      color: root.dim
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.caption
+      font.italic: true
+      horizontalAlignment: Text.AlignHCenter
+      verticalAlignment: Text.AlignVCenter
+      wrapMode: Text.WordWrap
+    }
+
+    // Synced lyrics: auto-following list with live highlight
+    ListView {
+      width: parent.width
+      visible: root.hasMedia && root.lyricsState === "ready" && root.lyricsSynced
+      height: Style.space(150)
+      clip: true
+      model: root.lyricsLines
+      currentIndex: root.lyricsIndex
+      preferredHighlightBegin: height / 2 - Style.space(11)
+      preferredHighlightEnd: height / 2 + Style.space(11)
+      highlightRangeMode: ListView.ApplyRange
+      highlightMoveDuration: Style.duration(220)
+      spacing: Style.space(5)
+
+      highlight: Rectangle {
+        width: ListView.view.width
+        height: Style.space(22)
+        radius: Style.space(7)
+        color: Util.alpha(root.accent, 0.22)
+      }
+
+      delegate: Item {
+        width: ListView.view.width
+        height: Math.max(lyricText.implicitHeight, Style.space(22))
+
+        Text {
+          id: lyricText
+          anchors.fill: parent
+          verticalAlignment: Text.AlignVCenter
+          textFormat: Text.PlainText
+          text: String(modelData.text || "")
+          color: index === ListView.view.currentIndex ? root.fg : root.dim
+          opacity: index === ListView.view.currentIndex ? 1.0 : (modelData.text === "" ? 0.35 : 0.75)
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.body
+          font.bold: index === ListView.view.currentIndex
+          elide: Text.ElideRight
+          maximumLineCount: 1
+        }
+      }
+    }
+
+    // Plain lyrics: scrollable text
+    Flickable {
+      width: parent.width
+      visible: root.hasMedia && root.lyricsState === "ready" && !root.lyricsSynced && root.lyricsPlainLines.length > 0
+      height: Style.space(150)
+      clip: true
+      contentWidth: width
+      contentHeight: plainLyricsText.implicitHeight
+      boundsBehavior: Flickable.StopAtBounds
+
+      Text {
+        id: plainLyricsText
+        width: parent.width
+        textFormat: Text.PlainText
+        text: root.lyricsPlainLines.join("\n")
+        color: root.fg
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.body
+        wrapMode: Text.WordWrap
       }
     }
   }

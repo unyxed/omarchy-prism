@@ -16,7 +16,7 @@ var POSITIONS = [
   "bottom-left", "bottom-center", "bottom-right"
 ]
 
-var MEDIA_STYLES = ["cover", "poster", "vinyl"]
+var MEDIA_STYLES = ["cover", "poster", "vinyl", "lyrics"]
 var CLOCK_STYLES = ["hero", "glass", "minimal"]
 var SYSTEM_STYLES = ["rings", "bars"]
 var CALENDAR_STYLES = ["split", "month"]

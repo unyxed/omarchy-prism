@@ -31,8 +31,8 @@ assert(n.todos.length === 1 && n.todos[0].text.length === 200, "todos bounded an
 n = S.normalize({ positions: { system: { x: 1e9, y: "bad" } } });
 assert(JSON.stringify(n.positions) === JSON.stringify({}), "bad positions dropped");
 
-n = S.normalize({ mediaStyle: "poster", clockStyle: "glass", systemStyle: "bars", calendarStyle: "month" });
-assert(n.mediaStyle === "poster" && n.clockStyle === "glass" && n.systemStyle === "bars" && n.calendarStyle === "month", "valid styles pass through");
+n = S.normalize({ mediaStyle: "lyrics", clockStyle: "glass", systemStyle: "bars", calendarStyle: "month" });
+assert(n.mediaStyle === "lyrics" && n.clockStyle === "glass" && n.systemStyle === "bars" && n.calendarStyle === "month", "valid styles pass through");
 
 n = S.normalize({ mediaStyle: "cinema", clockStyle: "", systemStyle: null, calendarStyle: "week" });
 assert(n.mediaStyle === S.DEFAULTS.mediaStyle && n.clockStyle === S.DEFAULTS.clockStyle && n.systemStyle === S.DEFAULTS.systemStyle && n.calendarStyle === S.DEFAULTS.calendarStyle, "unknown styles fall back to defaults");

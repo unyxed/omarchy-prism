@@ -76,6 +76,11 @@ Service.qml ──owns──▶ samplers + DesktopSurface ─┘
   Player pick order: preferred+playing → preferred → playing → loaded.
   Progress ticks 1/s while playing. Controls call `togglePlaying/next/previous`
   gated on `canControl`/`canGo*`.
+- **Lyrics:** per-track MPRIS change triggers a debounced `scripts/macos-glass-lyrics`
+  fetch (LRClrc, 8s timeout, 64 KiB cap, validated JSON). `model/Lyrics.js`
+  parses LRC (`[{t, text}]`, bounded, control-stripped) and resolves the
+  current line from playback position. Synced lines render in an auto-following
+  `ListView`; untimed lyrics render as scrollable text.
 - **Calendar:** reads `~/.config/omarchy/calendars.json` (names+colors only,
   30s refresh). No network fetch — dates come from the local clock.
 - **Todos:** stored in the plugin's own bar entry (`todos`, max 50×200 chars).

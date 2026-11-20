@@ -12,7 +12,7 @@ compositor plugin is installed.
 
 - **6 desktop cards** on the wallpaper layer (below windows, above wallpaper):
   clock, system (CPU/RAM), GPU, media, calendar, reminders
-- **Switchable styles per widget** — music: Cover / Poster / Vinyl;
+- **Switchable styles per widget** — music: Cover / Poster / Vinyl / Lyrics;
   clock: Hero / Glass / Minimal; system & GPU: Rings / Bars;
   calendar: Split / Month
 - **Album art** fetched safely (bounded download, magic-byte verified)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Lyrics: 4th music style with Apple-Music-style scrolling synced lyrics,
+  live line highlight + auto-follow, plain-lyrics fallback, instrumental
+  detection, per-track LRClrc fetch (bounded helper, no API key)
+
 ## 0.2.0
 
 - Switchable styles per widget (Music: Cover/Poster/Vinyl, Clock:
