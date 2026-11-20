@@ -18,6 +18,8 @@ GlassCard {
   property string mediaStyle: "cover"
   property bool flipped: false
 
+  onDoubleClicked: root.flipped = !root.flipped
+
 
   readonly property string trackTitle: media ? String(media.title || "") : ""
   readonly property string artist: media ? String(media.artist || "") : ""
@@ -109,14 +111,6 @@ GlassCard {
     front: Item {
       anchors.fill: parent
       visible: flipper.showingFront
-
-      // Below the controls: buttons accept their own clicks first, empty
-      // areas fall through here for the double-click-to-flip gesture.
-      MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.LeftButton
-        onDoubleClicked: root.flipped = !root.flipped
-      }
 
       Column {
         id: frontCol
@@ -585,12 +579,6 @@ GlassCard {
       id: backRoot
       anchors.fill: parent
       visible: !flipper.showingFront
-
-      MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.LeftButton
-        onDoubleClicked: root.flipped = !root.flipped
-      }
 
       Column {
         id: backCol

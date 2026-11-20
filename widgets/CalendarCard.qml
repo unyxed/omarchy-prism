@@ -15,6 +15,8 @@ GlassCard {
   property string calendarStyle: "split"
   property bool flipped: false
 
+  onDoubleClicked: root.flipped = !root.flipped
+
 
   property date now: new Date()
   readonly property var loc: Qt.locale(Commons.I18n.formatLocale)
@@ -155,12 +157,6 @@ GlassCard {
       anchors.fill: parent
       visible: flipper.showingFront
 
-      MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.LeftButton
-        onDoubleClicked: root.flipped = !root.flipped
-      }
-
       Column {
         id: frontCol
         width: parent.width
@@ -292,12 +288,6 @@ GlassCard {
       id: backRoot
       anchors.fill: parent
       visible: !flipper.showingFront
-
-      MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.LeftButton
-        onDoubleClicked: root.flipped = !root.flipped
-      }
 
       Column {
         id: backCol

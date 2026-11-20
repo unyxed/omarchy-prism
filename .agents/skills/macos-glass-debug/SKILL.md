@@ -95,6 +95,12 @@ require `omarchy restart shell`. Popup-only edits apply on rescan.
   needs its own rounded-rect mask (`MultiEffect` + hidden mask item, same
   pattern as `AlbumArt`) or corners render square while the card chrome stays
   round.
+- Drag deltas must be measured in a frame that does not move with the drag.
+  `DragHandler.centroid` is resolved in the handler's (moving) parent frame,
+  so driving a card's own position from it creates a feedback loop: the card
+  perpetually lags behind the cursor. Measure absolute deltas from the press
+  point in global screen coordinates (`mapToGlobal`, recomputed against the
+  stable pre-drag base every event), exactly like the right-button drag path.
 - Flipable sizing: fix the height at `max(front, back)` for the whole flip.
   Animating height per side forces per-frame layer-surface resizes plus a
   full sibling reflow underneath the rotation — reads as stutter. Center

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.1
+
+- Fix drag lag: left-drag now measures in global screen coordinates
+  (the DragHandler centroid was resolved in the card's own moving frame,
+  so the widget perpetually trailed the cursor); flip gesture moved onto
+  the same card-level handler
+
 ## 0.7.0
 
 - Photo widgets: add your own pictures as desktop tiles via the bar popup

@@ -29,6 +29,9 @@ Rectangle {
   signal resizeCommit(string id, real w, real h)
   signal movePreview(string id, real dx, real dy)
   signal moveCommit(string id, real x, real y)
+  signal doubleClicked
+  // Fired on left-button double-click. Cards that flip (media, calendar)
+  // handle this; plain cards ignore it.
 
   readonly property color fg: Color.popups.text
   readonly property color dim: Util.alpha(fg, 0.58)
@@ -59,26 +62,31 @@ Rectangle {
     }
   }
 
-  // Left-button free placement, attached at card level like OmaWidgets'
-  // packed-layout slots: a DragHandler only takes over past the drag
-  // threshold, so clicks on toggles, transport buttons and checkboxes still
-  // land while a real drag moves the card.
-  property DragHandler moveHandler: DragHandler {
-    target: null
+  // Left-button free placement, attached at card level. Deltas are measured
+  // in global screen coordinates (mapToGlobal), never in the card's own
+  // frame: measuring against a frame that moves with the drag creates a
+  // feedback loop where the card perpetually lags behind the cursor.
+  // Buttons and toggles in the content column sit above this area, so they
+  // keep receiving their clicks; only presses on empty card space start a
+  // move. Double-clicks (no drag) fall through to `doubleClicked`.
+  property MouseArea moveArea: MouseArea {
+    anchors.fill: parent
     acceptedButtons: Qt.LeftButton
-    onActiveChanged: {
-      if (!active) {
-        var dx = Math.round(centroid.position.x - centroid.pressPosition.x)
-        var dy = Math.round(centroid.position.y - centroid.pressPosition.y)
-        root.moveCommit(root.widgetId, dx, dy)
-      }
+    cursorShape: Qt.SizeAllCursor
+    property point startGlobal: Qt.point(0, 0)
+    onPressed: function (mouse) {
+      startGlobal = moveArea.mapToGlobal(mouse.x, mouse.y)
     }
-    onCentroidChanged: {
-      if (!active) return
-      var mdx = Math.round(centroid.position.x - centroid.pressPosition.x)
-      var mdy = Math.round(centroid.position.y - centroid.pressPosition.y)
-      root.movePreview(root.widgetId, mdx, mdy)
+    onPositionChanged: function (mouse) {
+      if (!pressed) return
+      var now = moveArea.mapToGlobal(mouse.x, mouse.y)
+      root.movePreview(root.widgetId, now.x - startGlobal.x, now.y - startGlobal.y)
     }
+    onReleased: function (mouse) {
+      var now = moveArea.mapToGlobal(mouse.x, mouse.y)
+      root.moveCommit(root.widgetId, now.x - startGlobal.x, now.y - startGlobal.y)
+    }
+    onDoubleClicked: root.doubleClicked()
   }
 
   width: cardW
