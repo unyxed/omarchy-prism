@@ -48,8 +48,6 @@ Rectangle {
     parent: root
     anchors.fill: parent
     acceptedButtons: Qt.RightButton
-    hoverEnabled: true
-    cursorShape: Qt.SizeAllCursor
     property point startGlobal: Qt.point(0, 0)
     onPressed: function (mouse) {
       startGlobal = dragArea.mapToGlobal(mouse.x, mouse.y)
@@ -74,11 +72,11 @@ Rectangle {
   // move. Double-clicks (no drag) fall through to `doubleClicked`.
   property MouseArea moveArea: MouseArea {
     // Explicit visual parent: see dragArea above. Without this the area
-    // may never see presses, and no drag can start.
+    // may never see presses, and no drag can start. Plain arrow cursor:
+    // the card moving under the pointer is feedback enough.
     parent: root
     anchors.fill: parent
     acceptedButtons: Qt.LeftButton
-    cursorShape: Qt.SizeAllCursor
     property point startGlobal: Qt.point(0, 0)
     onPressed: function (mouse) {
       startGlobal = moveArea.mapToGlobal(mouse.x, mouse.y)

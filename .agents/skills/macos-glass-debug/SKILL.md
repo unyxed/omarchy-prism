@@ -96,18 +96,20 @@ require `omarchy restart shell`. Popup-only edits apply on rescan.
   pattern as `AlbumArt`) or corners render square while the card chrome stays
   round.
 - Drag deltas must be measured in a frame that does not move with the drag.
-  (`DragHandler.centroid` resolves in the handler's moving parent frame, so driving a card's own position from it creates a feedback loop.)
-- Interactive areas (`MouseArea`, handlers) declared as named property values
-  (`property MouseArea x: MouseArea {...}`) may never join the visual tree,
-  so they silently receive no pointer events even though anchors resolve.
-  Prefer direct visual children; where a default-property alias forbids
-  that, assign an explicit visual parent (`parent: root`). Direct children
-  (card buttons, flip areas, resize grips) are the proof pattern that works.
-  `DragHandler.centroid` is resolved in the handler's (moving) parent frame,
-  so driving a card's own position from it creates a feedback loop: the card
+  `DragHandler.centroid` resolves in the handler's moving parent frame, so
+  driving a card's own position from it creates a feedback loop: the card
   perpetually lags behind the cursor. Measure absolute deltas from the press
   point in global screen coordinates (`mapToGlobal`, recomputed against the
   stable pre-drag base every event), exactly like the right-button drag path.
+- Interactive pointer areas declared as named QML properties
+  (`property MouseArea x: MouseArea {...}`) may never join the visual tree,
+  so they silently receive no events even though anchors resolve. Prefer
+  direct visual children; where a default-property alias forbids that,
+  assign an explicit visual parent (`parent: root`).
+- Rebuilding desktop surfaces mid-drag destroys the live grab: the card
+  stops following the pointer until the next press (looks like lag, then a
+  jump on re-press). Gate `refreshSurfaces()` on interaction state and flush
+  deferred rebuilds after release.
 - Flipable sizing: fix the height at `max(front, back)` for the whole flip.
   Animating height per side forces per-frame layer-surface resizes plus a
   full sibling reflow underneath the rotation — reads as stutter. Center

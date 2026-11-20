@@ -138,6 +138,14 @@ Item {
     }
   }
 
+  // A surface rebuild destroys live grab state, which kills an in-progress
+  // drag dead mid-motion (card stops following until the next press). While
+  // a drag or resize preview is active, rebuilds are deferred and flushed
+  // once the pointer is released and the values are committed.
+  readonly property bool interacting: Object.keys(root.livePositions).length > 0
+    || Object.keys(root.liveSizes).length > 0
+  property bool surfacesDirty: false
+
   function showCardMove(id, dx, dy, screen) {
     var base = root.basePositionFor(id, screen)
     var pos = root.clampPosition(id, screen, base.x + dx, base.y + dy)
@@ -280,6 +288,11 @@ Item {
   }
 
   function refreshSurfaces() {
+    if (root.interacting) {
+      root.surfacesDirty = true
+      return
+    }
+    root.surfacesDirty = false
     var key = root.surfacesSignature() + "::" + String(media ? media.hasMedia : false)
     if (key === root.surfacesKey) return
     root.surfacesKey = key
@@ -295,6 +308,8 @@ Item {
   onWidgetsChanged: root.refreshSurfaces()
   onDisplayWidgetsChanged: root.refreshSurfaces()
   onTargetScreensChanged: root.refreshSurfaces()
+  onLivePositionsChanged: if (!root.interacting && root.surfacesDirty) root.refreshSurfaces()
+  onLiveSizesChanged: if (!root.interacting && root.surfacesDirty) root.refreshSurfaces()
   Component.onCompleted: root.refreshSurfaces()
 
   Variants {
