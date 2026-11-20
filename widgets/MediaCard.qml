@@ -106,12 +106,19 @@ GlassCard {
     // First-flip warm-up: `visible: showingFront` means the back face is
     // never painted before the first flip, so its shaders (MultiEffect on
     // the mini-cover), delegates and glyphs would all compile *during*
-    // that first animation — the classic one-time stutter. Paint the back
-    // once at startup under opacity 0 (invisible), then revert to the
-    // cheap visibility gating. Steady-state cost is unchanged.
+    // that first animation — the classic one-time stutter.
+    //
+    // The window matters: for the first ~150ms after load the layer surface
+    // is often not yet mapped, and an unmapped window skips rendering
+    // entirely, so a short warm-up warms nothing. Warm for 5s, at 0.01
+    // opacity (never exactly 0, which some paths can cull), sitting behind
+    // the front face (z -1) so it cannot intercept pointer events. Both
+    // exceptions are scoped to "warming while showing the front"; a real
+    // flip mid-warm-up still renders normally.
     property bool warmingBack: true
+    readonly property bool warmingHidden: flipper.warmingBack && flipper.showingFront
     Timer {
-      interval: 150
+      interval: 5000
       running: flipper.warmingBack
       repeat: false
       onTriggered: flipper.warmingBack = false
@@ -594,7 +601,8 @@ GlassCard {
       id: backRoot
       anchors.fill: parent
       visible: !flipper.showingFront || flipper.warmingBack
-      opacity: flipper.warmingBack && flipper.showingFront ? 0 : 1
+      opacity: flipper.warmingHidden ? 0.01 : 1
+      z: flipper.warmingHidden ? -1 : 0
 
       Column {
         id: backCol

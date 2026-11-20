@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.4
+
+- First-flip stutter, second attempt: warm-up now runs for 5 s behind the
+  front face instead of 150 ms at 0 opacity — a short early window misses
+  because the layer surface is not yet mapped, so nothing was painted
+
 ## 0.7.3
 
 - Fix one-time first-flip stutter: the back face was never painted before

@@ -118,11 +118,14 @@ require `omarchy restart shell`. Popup-only edits apply on rescan.
 - One-time first-flip stutter is a cold paint: a back face gated by
   `visible:` is never *painted* before the first flip, so its shaders
   (`MultiEffect`/layers), delegates and glyphs compile during that first
-  animation and later flips run warm. Fix by warming: paint the back once
-  at startup under `opacity: 0` for ~150 ms, then revert to the visibility
-  gating. Screenshot bursts cannot measure frame pacing — the honest
-  verification is that the warm-up runs warning-free and the mechanism
-  removes the only cold path.
+  animation and later flips run warm. Warm it at startup: `visible` on,
+  0.01 opacity (never exactly 0), `z: -1` behind the front so it cannot
+  take pointer events, for **~5 s — a short window misses**: for the first
+  moments after load the layer surface is not mapped and an unmapped
+  window skips rendering, so the warm-up paints nothing. Scope the
+  exceptions to "warming while showing the front". Screenshot bursts
+  cannot measure frame pacing — verify the mid-warm-up flip renders, and
+  that warm-up ends warning-free.
 
 ## 6. Verifying a flip visually without touching the desktop
 

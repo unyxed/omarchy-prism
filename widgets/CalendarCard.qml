@@ -17,6 +17,7 @@ GlassCard {
 
 
 
+
   onDoubleClicked: root.flipped = !root.flipped
 
 
@@ -151,11 +152,13 @@ GlassCard {
     // Flipable paints both sides unconditionally, so visibility is switched
     // explicitly at the edge-on point.
     // First-flip warm-up: same rationale as MediaCard — paint the back
-    // once at startup under opacity 0 so the first user flip is not the
-    // first *paint* of that face.
+    // during a startup window long enough to outlast surface mapping, at
+    // 0.01 opacity behind the front so it is invisible and cannot take
+    // pointer events. A real flip mid-warm-up still renders normally.
     property bool warmingBack: true
+    readonly property bool warmingHidden: flipper.warmingBack && flipper.showingFront
     Timer {
-      interval: 150
+      interval: 5000
       running: flipper.warmingBack
       repeat: false
       onTriggered: flipper.warmingBack = false
@@ -301,7 +304,8 @@ GlassCard {
       id: backRoot
       anchors.fill: parent
       visible: !flipper.showingFront || flipper.warmingBack
-      opacity: flipper.warmingBack && flipper.showingFront ? 0 : 1
+      opacity: flipper.warmingHidden ? 0.01 : 1
+      z: flipper.warmingHidden ? -1 : 0
 
       Column {
         id: backCol
