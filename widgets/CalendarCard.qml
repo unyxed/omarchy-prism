@@ -156,7 +156,7 @@ GlassCard {
     // Remaining vertical space inside this frame once the back header and
     // hint are laid out. Scroll areas bind to this instead of fixed heights.
     readonly property real bodyH: Math.max(Style.space(56),
-      height - backHeadRow.implicitHeight - backHint.implicitHeight - Style.spacing.sm * 2)
+      height - backHeadRow.implicitHeight - Style.spacing.sm)
     Behavior on height { NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic } }
 
     // Flipable paints both sides unconditionally, so visibility is switched
@@ -456,18 +456,6 @@ GlassCard {
               }
             }
           }
-        }
-
-        Text {
-          id: backHint
-          width: parent.width
-          textFormat: Text.PlainText
-          text: root.strings.t("calendar.flipback")
-          color: root.dim
-          font.family: root.fontFamily
-          font.pixelSize: Math.max(9, Style.font.caption - 2)
-          font.italic: true
-          horizontalAlignment: Text.AlignHCenter
         }
       }
     }

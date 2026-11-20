@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.3
+
+- Removed the "Double-click to flip back" hint lines: cleaner backs with
+  more room for content (flip gesture is documented in README/popup)
+
 ## 0.8.2
 
 - Flip backs fit the front frame (remaining-space lists): flipping and

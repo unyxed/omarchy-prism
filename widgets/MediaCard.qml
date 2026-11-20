@@ -103,7 +103,7 @@ GlassCard {
     // Remaining vertical space inside this frame once the back header and
     // hint are laid out. Scroll areas bind to this instead of fixed heights.
     readonly property real bodyH: Math.max(Style.space(56),
-      height - backHeadRow.implicitHeight - backHint.implicitHeight - Style.spacing.sm * 2)
+      height - backHeadRow.implicitHeight - Style.spacing.xs)
 
     // Flipable paints both sides unconditionally, so visibility is switched
     // explicitly at the edge-on point. Inner columns keep measuring while
@@ -623,7 +623,7 @@ GlassCard {
 
           Rectangle {
             id: backMiniArt
-            width: Math.max(Style.space(64), flipper.height - backHint.implicitHeight - Style.spacing.sm)
+            width: Math.max(Style.space(64), Math.min(flipper.height, parent.width * 0.55))
             height: width
             radius: Style.space(10)
             color: Util.alpha(root.fg, 0.08)
@@ -799,18 +799,6 @@ GlassCard {
               wrapMode: Text.WordWrap
             }
           }
-        }
-
-        Text {
-          id: backHint
-          width: parent.width
-          textFormat: Text.PlainText
-          text: root.strings.t("media.flipback")
-          color: root.dim
-          font.family: root.fontFamily
-          font.pixelSize: Math.max(9, Style.font.caption - 2)
-          font.italic: true
-          horizontalAlignment: Text.AlignHCenter
         }
       }
     }

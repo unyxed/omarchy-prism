@@ -48,7 +48,7 @@ GlassCard {
     // memory line and hint are laid out. The core list binds to this
     // instead of a fixed height.
     readonly property real bodyH: Math.max(Style.space(56),
-      height - backHeadRow.implicitHeight - backMemText.implicitHeight - backHint.implicitHeight - Style.spacing.sm * 3)
+      height - backHeadRow.implicitHeight - backMemText.implicitHeight - Style.spacing.sm * 2)
 
     // Flipable paints both sides unconditionally, so visibility is switched
     // explicitly at the edge-on point.
@@ -353,18 +353,6 @@ GlassCard {
           font.pixelSize: Style.font.caption
           font.bold: true
           elide: Text.ElideRight
-        }
-
-        Text {
-          id: backHint
-          width: parent.width
-          textFormat: Text.PlainText
-          text: root.strings.t("system.flipback")
-          color: root.dim
-          font.family: root.fontFamily
-          font.pixelSize: Math.max(9, Style.font.caption - 2)
-          font.italic: true
-          horizontalAlignment: Text.AlignHCenter
         }
       }
     }

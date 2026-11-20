@@ -5,13 +5,11 @@
   "system.threads": "Threads",
   "system.nocores": "No per-core data on this machine",
   "system.memory": "Memory",
-  "system.flipback": "Double-click to flip back",
   "media.idle": "Nothing playing",
   "media.unknown": "Unknown track",
   "media.searching": "Searching lyrics…",
   "media.nolyrics": "No lyrics found for this track",
   "media.instrumental": "Instrumental ♪",
-  "media.flipback": "Double-click to flip back",
   "calendar.feeds": { "one": "%1 calendar", "other": "%1 calendars" },
   "calendar.upcoming": "Upcoming",
   "calendar.searching": "Loading events…",
@@ -20,6 +18,5 @@
   "calendar.allday": "All day",
   "calendar.today": "Today",
   "calendar.tomorrow": "Tomorrow",
-  "calendar.flipback": "Double-click to flip back",
   "todo.empty": "No reminders yet. Add your first below."
 }
