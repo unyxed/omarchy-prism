@@ -107,8 +107,14 @@ require `omarchy restart shell`. Popup-only edits apply on rescan.
   content column, and property-held items may silently receive no events).
 - Rebuilding desktop surfaces mid-drag destroys the live grab: the card
   stops following the pointer until the next press (looks like lag, then a
-  jump on re-press). Gate `refreshSurfaces()` on interaction state and flush
-  deferred rebuilds after release.
+  jump on re-press). Gate `refreshSurfaces()` on interaction state — but
+  the gate must be event-driven with a watchdog, never map-presence:
+  a killed drag leaves a stale live entry forever, wedging the gate so
+  every later toggle/style/position change is silently deferred until a
+  shell restart (the write still lands in shell.json — repro'd live and
+  exactly what "toggles only work after reload" reports). Symptom check:
+  if a popup change lands in shell.json but the desktop ignores it, look
+  for a wedged gate first.
 - Flipable sizing: the flipper is locked to the *front* face (or an
   explicit user resize) and every back fits inside via remaining-space
   bindings (`bodyH` = frame minus fixed header/hint). Pinning `max()` of

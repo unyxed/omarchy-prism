@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import qs.Ui
 import "../widgets"
@@ -82,10 +83,22 @@ Item {
     return widths[id] !== undefined ? widths[id] : config.cardWidth
   }
 
+  // Provisional heights: a fresh shell measures each card asynchronously,
+  // so the first flow layout would stack everything at the anchor and
+  // cascade into place as measurements arrive — visible pile-up, transient
+  // overlaps, and column-count flip-flops. These seeds approximate each
+  // card's measured size (observed at default settings), making the first
+  // layout near-final with one small settle instead.
+  readonly property var seedHeights: ({
+    clock: 134, system: 130, gpu: 130, media: 140, calendar: 183, todo: 126
+  })
+
   function flowHeight(id) {
     var size = explicitSize(id)
     if (size) return size.h
-    return heights[id] !== undefined ? heights[id] : 0
+    if (heights[id] !== undefined) return heights[id]
+    if (String(id).indexOf("photo.") === 0) return Math.round(config.cardWidth * 0.75)
+    return seedHeights[id] !== undefined ? seedHeights[id] : 140
   }
 
   function noteMetrics(id, w, h) {
@@ -115,7 +128,8 @@ Item {
   function flowFor(screen) {
     return Layout.flowPositions(config.position, root.flowEntries(),
       config.spacing, config.marginX, config.marginY,
-      screen ? screen.width : 0, screen ? screen.height : 0)
+      screen ? screen.width - root.reservedRightFor(screen) : 0,
+      screen ? screen.height : 0)
   }
 
   function basePositionFor(id, screen) {
@@ -130,7 +144,8 @@ Item {
   }
 
   function clampPosition(id, screen, x, y) {
-    var maxX = Math.max(0, (screen ? screen.width : 0) - root.flowWidth(id))
+    var reserve = root.reservedRightFor(screen)
+    var maxX = Math.max(0, (screen ? screen.width - reserve : 0) - root.flowWidth(id))
     var maxY = Math.max(0, (screen ? screen.height : 0) - root.flowHeight(id))
     return {
       x: Math.round(Math.max(0, Math.min(maxX, x))),
@@ -140,13 +155,52 @@ Item {
 
   // A surface rebuild destroys live grab state, which kills an in-progress
   // drag dead mid-motion (card stops following until the next press). While
-  // a drag or resize preview is active, rebuilds are deferred and flushed
-  // once the pointer is released and the values are committed.
-  readonly property bool interacting: Object.keys(root.livePositions).length > 0
-    || Object.keys(root.liveSizes).length > 0
+  // pointer events keep arriving for a card, rebuilds are deferred.
+  //
+  // The gate must never wedge. A drag whose grab dies mid-motion sends no
+  // more events, so the watchdog releases the gate, drops the stale preview
+  // and flushes whatever was deferred — otherwise one killed drag
+  // permanently defers every popup change until the shell restarts (the
+  // write still lands in shell.json, so restarting looks like the only
+  // fix). Verified live: toggles landed but surfaces never refreshed.
+  property double lastPointerEventMs: 0
+  property bool gateHeld: false
   property bool surfacesDirty: false
 
+  function notePointerEvent() {
+    root.lastPointerEventMs = Date.now()
+    if (!root.gateHeld) root.gateHeld = true
+  }
+
+  Timer {
+    id: gateWatchdog
+    interval: 500
+    repeat: true
+    running: root.gateHeld
+    onTriggered: {
+      var idleMs = Date.now() - root.lastPointerEventMs
+      var empty = Object.keys(root.livePositions).length === 0
+        && Object.keys(root.liveSizes).length === 0
+      // Fast release: drag committed and round-tripped (maps pruned).
+      if (idleMs > 750 && empty) {
+        root.gateHeld = false
+        if (root.surfacesDirty) root.refreshSurfaces()
+      // Hard release: grab died mid-motion (no events for 2s). The stale
+      // preview is dropped — the position was never committed, so showing
+      // it there was a lie — and deferred rebuilds flush.
+      } else if (idleMs > 2000) {
+        root.gateHeld = false
+        root.livePositions = ({})
+        root.liveSizes = ({})
+        if (root.surfacesDirty) root.refreshSurfaces()
+      }
+    }
+  }
+
+  readonly property bool interacting: root.gateHeld
+
   function showCardMove(id, dx, dy, screen) {
+    root.notePointerEvent()
     var base = root.basePositionFor(id, screen)
     var pos = root.clampPosition(id, screen, base.x + dx, base.y + dy)
     var next = {}
@@ -161,6 +215,7 @@ Item {
   }
 
   function showCardResize(id, w, h) {
+    root.notePointerEvent()
     var next = {}
     for (var k in root.liveSizes) next[k] = root.liveSizes[k]
     next[id] = { w: w, h: h }
@@ -173,9 +228,15 @@ Item {
   }
 
   function pruneLive() {
+    // Live previews only make sense for cards that still exist; a toggle
+    // that removes a widget mid-drag must not leave its entry behind.
+    var known = {}
+    var list = root.displayWidgets || []
+    for (var w = 0; w < list.length; w++) known[String(list[w])] = true
     var sizes = {}
     var sizeChanged = false
     for (var k in root.liveSizes) {
+      if (!known[k]) { sizeChanged = true; continue }
       var stored = config.sizes ? config.sizes[k] : null
       if (stored && stored.w === root.liveSizes[k].w && stored.h === root.liveSizes[k].h)
         sizeChanged = true
@@ -186,6 +247,7 @@ Item {
     var positions = {}
     var positionChanged = false
     for (var p in root.livePositions) {
+      if (!known[p]) { positionChanged = true; continue }
       var committed = config.positions ? config.positions[p] : null
       if (committed && committed.x === root.livePositions[p].x
           && committed.y === root.livePositions[p].y)
@@ -308,7 +370,66 @@ Item {
   onTargetScreensChanged: root.refreshSurfaces()
   onLivePositionsChanged: if (!root.interacting && root.surfacesDirty) root.refreshSurfaces()
   onLiveSizesChanged: if (!root.interacting && root.surfacesDirty) root.refreshSurfaces()
-  Component.onCompleted: root.refreshSurfaces()
+  Component.onCompleted: {
+    root.refreshSurfaces()
+    root.probeDocks()
+  }
+
+  // Right-edge floating docks (rosakodu.dock and friends) sit above the
+  // bottom layer, so a card dragged under one ends up half-hidden. The
+  // compositor's layer list is probed once at startup; a thin vertical
+  // strip hugging a monitor's right edge reserves that monitor's drop and
+  // flow placement. No dock, no reserve — nothing is clamped for anyone
+  // who does not run one.
+  property var dockReserve: ({})
+
+  function reservedRightFor(screen) {
+    if (!screen) return 0
+    var r = root.dockReserve[String(screen.name)]
+    return typeof r === "number" ? r : 0
+  }
+
+  function probeDocks() {
+    if (!dockProbe.running) dockProbe.running = true
+  }
+
+  Process {
+    id: dockProbe
+    command: ["hyprctl", "layers"]
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: root.parseDocks(text)
+    }
+  }
+
+  function parseDocks(text) {
+    var screens = Quickshell.screens
+    var widthByName = ({})
+    for (var s = 0; s < screens.length; s++)
+      widthByName[String(screens[s].name)] = screens[s].width
+    var out = ({})
+    var monitor = ""
+    var lines = String(text || "").split("\n")
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i]
+      var mon = line.match(/^Monitor (\S+):/)
+      if (mon) { monitor = mon[1]; continue }
+      if (monitor === "" || !widthByName[monitor]) continue
+      var ns = line.match(/namespace: (\S+)/)
+      if (!ns || ns[1].toLowerCase().indexOf("dock") === -1) continue
+      var xy = line.match(/xywh: (\d+) (\d+) (\d+) (\d+)/)
+      if (!xy) continue
+      var x = Number(xy[1])
+      var w = Number(xy[3])
+      var h = Number(xy[4])
+      var screenW = widthByName[monitor]
+      if (w > 0 && w <= 120 && h >= 200 && x >= screenW - w - 80) {
+        var reserve = screenW - x
+        if (!out[monitor] || out[monitor] < reserve) out[monitor] = reserve
+      }
+    }
+    root.dockReserve = out
+  }
 
   Variants {
     model: root.surfaces
