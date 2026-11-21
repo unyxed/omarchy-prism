@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.10.0
+
+- Collision-aware free placement: drops resolve to the nearest spot that
+  touches no other card (small magnetic nudge, never a teleport); the
+  dragged card ghosts at 85% opacity so what's below stays readable
+- Drop a card back on its flow slot and it rejoins the stack (pins are
+  no longer a one-way trap)
+- Per-monitor pins: positions record the screen they were dropped on;
+  legacy pins apply everywhere, so single-monitor setups are unchanged
+- Load hygiene: stale pins that boot into overlaps (resolution change,
+  dock appearing, hand-edited shell.json) are resolved automatically
+  through the normal write path — idempotent, verified live
+
 ## 0.9.0
 
 - Fixed: popup changes could be silently deferred until a shell restart —

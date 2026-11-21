@@ -20,12 +20,12 @@ compositor plugin is installed.
 - **Flippable calendar** — double-click to flip it over: live agenda from
   your Google Calendar feeds, with refresh button
 - **Flippable system card** — double-click for per-thread load detail
-- **Free placement** — right-drag any card to put it anywhere on the desktop
-  (left clicks stay reserved for controls and double-click-to-flip);
-  drag a corner to resize. Drags stay clear of a right-edge floating dock
-  when one is running. Pinned cards remember their spot even while toggled
-  off, and return to it when re-enabled — Reset positions & sizes unpins
-  everything.
+- **Free placement, overlap-free** — right-drag any card anywhere; a drop
+  settles to the nearest spot that touches no other card, and dropping a
+  card back on its stack slot rejoins the auto-flow. Drags stay clear of a
+  right-edge floating dock when one is running. Pins are per-monitor, and
+  stale overlaps fix themselves at startup. Reset positions & sizes
+  unpins everything.
 - **Photo widgets** — add your own pictures as macOS-style photo tiles
 - **Album art** fetched safely (bounded download, magic-byte verified)
 - **Right-drag to move, corner-drag to resize** — positions persist

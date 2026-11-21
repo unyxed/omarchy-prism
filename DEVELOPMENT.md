@@ -56,12 +56,13 @@ Service.qml ──owns──▶ samplers + DesktopSurface ─┘
 | `services/*.qml` | Pollers/sensors: System (`/proc`), Gpu (`nvidia-smi`/sysfs), Media (MPRIS), Calendar (local JSON) |
 | `model/Settings.js` | Normalization + `fromBarConfig`; pure JS, unit-tested with node |
 | `model/Layout.js` | 1–2 column bento flow positions; pure JS |
+| `model/Placement.js` | Collision resolver: overlap tests, nearest-free-spot search; pure JS, unit-tested |
 | `model/Sanitize.js` | `escapeMarkup` / `cleanLine` / `boundList`; pure JS, unit-tested |
 | `model/Sysfs.js` | `/proc` parsers; pure JS |
 | `settings/SettingsPanel.qml` | Popup content: toggles, style pickers, sliders, todo manager |
 | `scripts/macos-glass-art` | Bounded art fetcher (curl/file copy + magic-byte gate) |
 | `i18n/en.json` | English card strings (bar tooltip, empty states, plurals) |
-| `tests/` | `test_sanitize.js`, `test_settings.js` — run with `node` |
+| `tests/` | `test_sanitize.js`, `test_settings.js`, `test_lyrics.js`, `test_placement.js` — run with `node` |
 
 ## 2. Data flow per widget
 
@@ -130,7 +131,7 @@ Service.qml ──owns──▶ samplers + DesktopSurface ─┘
 
 ```sh
 cd ~/.config/omarchy/plugins/unyxed.macos-glass
-node tests/test_sanitize.js && node tests/test_settings.js
+node tests/test_sanitize.js && node tests/test_settings.js && node tests/test_placement.js
 omarchy plugin validate .
 for f in BarWidget.qml Service.qml ui/*.qml settings/*.qml surfaces/*.qml widgets/*.qml services/*.qml; do
   /usr/lib/qt6/bin/qmllint "$f" || echo "FAIL $f"
