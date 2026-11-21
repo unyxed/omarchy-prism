@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.9.0
+
+- Fixed: popup changes could be silently deferred until a shell restart —
+  a killed drag wedged the surface-rebuild gate (repro'd live: the toggle
+  landed in shell.json, the desktop never refreshed). The gate is now
+  event-driven with a self-healing watchdog; toggles apply instantly
+- Fixed: startup layout pile-up (cards stacked at the anchor and cascaded
+  as measurements arrived) — provisional per-card heights make the first
+  layout near-final
+- Fixed: drags and flow placement now respect a right-edge floating dock
+  (probed once at startup; no dock, no clamp)
+- Popup: position picker shows the pinned count and explains that pinned
+  cards ignore it; photo add failures show an inline reason instead of
+  failing silently; reminders section notes when the card is hidden
+
 ## 0.8.3
 
 - Removed the "Double-click to flip back" hint lines: cleaner backs with
