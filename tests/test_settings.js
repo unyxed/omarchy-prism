@@ -39,6 +39,10 @@ assert(n.photos.length === 1 && n.photos[0].id === "ok", "photos bounded to real
 n = S.normalize({ positions: { system: { x: 1e9, y: "bad" } } });
 assert(JSON.stringify(n.positions) === JSON.stringify({}), "bad positions dropped");
 
+n = S.normalize({ positions: { system: { x: 100, y: 200, screen: "HDMI-A-1" }, gpu: { x: 50, y: 60, screen: "" } } });
+assert(n.positions.system.screen === "HDMI-A-1", "per-monitor pin screen kept");
+assert(n.positions.gpu.screen === undefined, "empty screen field treated as legacy (applies everywhere)");
+
 n = S.normalize({ mediaStyle: "lyrics", clockStyle: "glass", systemStyle: "bars", calendarStyle: "month" });
 assert(n.mediaStyle === "lyrics" && n.clockStyle === "glass" && n.systemStyle === "bars" && n.calendarStyle === "month", "valid styles pass through");
 

@@ -111,6 +111,10 @@ function normalizePositions(value) {
       x: Math.round(Math.max(-20000, Math.min(20000, x))),
       y: Math.round(Math.max(-20000, Math.min(20000, y)))
     }
+    // Optional monitor scope: a pin written on one screen only applies
+    // there. Absent = legacy = applies everywhere.
+    if (typeof entry.screen === "string" && entry.screen !== "")
+      out[id].screen = entry.screen.substring(0, 64)
   }
   return out
 }

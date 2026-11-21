@@ -61,9 +61,11 @@ Item {
   readonly property alias calendar: calendarService
 
   // Desktop interactions only re-emit here. Persisting happens in the bar
-  // widget, the only thing that writes shell.json.
+  // widget, the only thing that writes shell.json. pinned=false asks the
+  // writer to remove the pin (rejoin the flow); screen scopes the pin to
+  // one monitor.
   signal resizeCommitted(string id, real w, real h)
-  signal positionCommitted(string id, real x, real y)
+  signal positionCommitted(string id, real x, real y, bool pinned, string screen)
   signal todoToggleRequested(string id)
 
   SystemService {
@@ -101,7 +103,7 @@ Item {
     show: root.config.widgets.length > 0
 
     onResizeCommit: function (id, w, h) { root.resizeCommitted(id, w, h) }
-    onMoveCommit: function (id, x, y) { root.positionCommitted(id, x, y) }
+    onMoveCommit: function (id, x, y, pinned, screen) { root.positionCommitted(id, x, y, pinned, screen) }
     onTodoToggled: function (id) { root.todoToggleRequested(id) }
   }
 }

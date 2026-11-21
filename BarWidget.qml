@@ -95,11 +95,18 @@ Panel {
     write({ sizes: sizes })
   }
 
-  function writePositions(id, x, y) {
+  function writePositions(id, x, y, screen) {
     var positions = ({})
     var current = config.positions ? config.positions : {}
     for (var k in current) positions[k] = current[k]
-    positions[id] = { x: x, y: y }
+    positions[id] = { x: x, y: y, screen: screen }
+    write({ positions: positions })
+  }
+
+  function removePosition(id) {
+    var positions = ({})
+    var current = config.positions ? config.positions : {}
+    for (var k in current) if (k !== id) positions[k] = current[k]
     write({ positions: positions })
   }
 
@@ -121,7 +128,10 @@ Panel {
     target: root.service
     ignoreUnknownSignals: true
     function onResizeCommitted(id, w, h) { root.writeSizes(id, w, h) }
-    function onPositionCommitted(id, x, y) { root.writePositions(id, x, y) }
+    function onPositionCommitted(id, x, y, pinned, screen) {
+      if (pinned) root.writePositions(id, x, y, screen)
+      else root.removePosition(id)
+    }
     function onTodoToggleRequested(id) { root.toggleTodo(id) }
   }
 

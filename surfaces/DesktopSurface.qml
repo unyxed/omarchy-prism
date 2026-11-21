@@ -1,10 +1,12 @@
 import QtQuick
+import qs.Commons
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import qs.Ui
 import "../widgets"
 import "../model/Layout.js" as Layout
+import "../model/Placement.js" as Placement
 
 // Desktop cards above the wallpaper, below windows. One small surface per
 // card so gaps between cards stay click-through. The namespace is the one
@@ -25,7 +27,10 @@ Item {
   signal resizePreview(string id, real w, real h)
   signal resizeCommit(string id, real w, real h)
   signal movePreview(string id, real dx, real dy)
-  signal moveCommit(string id, real x, real y)
+  // pinned=false means "rejoin the flow" (the position args are the flow
+  // slot, kept for the write path's symmetry). screen is the monitor the
+  // drop happened on, so pins can belong to one monitor only.
+  signal moveCommit(string id, real x, real y, bool pinned, string screen)
   signal todoToggled(string id)
 
   readonly property var widgets: config && config.widgets ? config.widgets : []
@@ -113,27 +118,42 @@ Item {
     heights = nextHeights
   }
 
-  function flowEntries() {
+  // A pin belongs to the screen it was dropped on. Entries without a
+  // screen are legacy and apply everywhere, so single-monitor users and
+  // old configs never see a difference.
+  function pinnedFor(id, screen) {
+    var entry = config.positions ? config.positions[id] : null
+    if (!entry) return null
+    if (typeof entry.screen === "string" && entry.screen !== ""
+      && screen && String(screen.name) !== entry.screen) return null
+    return entry
+  }
+
+  // includeId: compute the flow as if that one card were unpinned — the
+  // "home slot" a drop can return to.
+  function flowEntries(includeId, screen) {
     var out = []
     var list = root.displayWidgets || []
     for (var i = 0; i < list.length; i++) {
       var id = list[i]
       if (id === "media" && config.hideMediaWhenIdle && media && !media.hasMedia) continue
-      if (config.positions && config.positions[id]) continue
+      var pin = root.pinnedFor(id, screen)
+      if (pin && id !== includeId) continue
       out.push({ id: id, w: root.flowWidth(id), h: root.flowHeight(id) })
     }
     return out
   }
 
-  function flowFor(screen) {
-    return Layout.flowPositions(config.position, root.flowEntries(),
+  function flowFor(screen, includeId) {
+    return Layout.flowPositions(config.position, root.flowEntries(includeId, screen),
       config.spacing, config.marginX, config.marginY,
       screen ? screen.width - root.reservedRightFor(screen) : 0,
       screen ? screen.height : 0)
   }
 
   function basePositionFor(id, screen) {
-    if (config.positions && config.positions[id]) return config.positions[id]
+    var pin = root.pinnedFor(id, screen)
+    if (pin) return pin
     var flow = root.flowFor(screen)
     return flow[id] || { x: config.marginX, y: config.marginY }
   }
@@ -211,7 +231,46 @@ Item {
 
   function commitCardMove(id, dx, dy, screen) {
     root.showCardMove(id, dx, dy, screen)
-    root.moveCommit(id, root.livePositions[id].x, root.livePositions[id].y)
+    var raw = root.livePositions[id]
+    var card = { x: raw.x, y: raw.y, w: root.flowWidth(id), h: root.flowHeight(id) }
+    var screenName = screen ? String(screen.name) : ""
+
+    // Dropped back onto the flow slot the card would occupy when unpinned:
+    // rejoin the stack instead of pinning beside it. Clear the live
+    // override so the card falls to its flow binding immediately.
+    var home = root.flowFor(screen, id)[id]
+    if (home && Placement.rectsOverlap(card, home)) {
+      var cleared = {}
+      for (var lp in root.livePositions) if (lp !== id) cleared[lp] = root.livePositions[lp]
+      root.livePositions = cleared
+      root.moveCommit(id, home.x, home.y, false, screenName)
+      return
+    }
+
+    // Free placement, minus overlaps: settle to the nearest spot that
+    // touches neither another card nor the screen edge.
+    var resolved = Placement.resolveDrop(card, root.otherRects(id, screen), root.screenBounds(screen))
+    root.moveCommit(id, Math.round(resolved.x), Math.round(resolved.y), true, screenName)
+  }
+
+  function screenBounds(screen) {
+    return {
+      x: 0, y: 0,
+      w: Math.max(0, (screen ? screen.width : 0) - root.reservedRightFor(screen)),
+      h: screen ? screen.height : 0
+    }
+  }
+
+  function otherRects(id, screen) {
+    var out = []
+    var list = root.displayWidgets || []
+    for (var i = 0; i < list.length; i++) {
+      var other = list[i]
+      if (other === id || !root.isVisible(other)) continue
+      var pos = root.positionFor(other, screen)
+      out.push({ x: pos.x, y: pos.y, w: root.flowWidth(other), h: root.flowHeight(other) })
+    }
+    return out
   }
 
   function showCardResize(id, w, h) {
@@ -375,6 +434,59 @@ Item {
     root.probeDocks()
   }
 
+  // Load hygiene: pins written for a different screen state (resolution
+  // change, a dock appearing, hand-edited shell.json, content growth) can
+  // boot straight into overlaps. A few seconds after start — once card
+  // heights are measured — every pinned card is resolved against its
+  // neighbours through the normal write path: the fix is durable and
+  // idempotent, so a clean layout writes nothing.
+  Timer {
+    id: hygieneTimer
+    interval: 3000
+    running: true
+    repeat: false
+    onTriggered: root.reconcileStalePins()
+  }
+
+  Timer {
+    id: hygieneRetry
+    interval: 1500
+    onTriggered: root.reconcileStalePins()
+  }
+
+  function reconcileStalePins() {
+    if (root.interacting) {
+      hygieneRetry.restart()
+      return
+    }
+    var screens = root.targetScreens
+    for (var s = 0; s < screens.length; s++) {
+      var screen = screens[s]
+      var list = root.displayWidgets || []
+      var rects = ({})
+      var order = []
+      for (var i = 0; i < list.length; i++) {
+        var id = list[i]
+        if (!root.isVisible(id)) continue
+        var pos = root.positionFor(id, screen)
+        rects[id] = { x: pos.x, y: pos.y, w: root.flowWidth(id), h: root.flowHeight(id) }
+        order.push(id)
+      }
+      for (var k = 0; k < order.length; k++) {
+        var pid = order[k]
+        if (!root.pinnedFor(pid, screen)) continue
+        var others = []
+        for (var o = 0; o < order.length; o++)
+          if (order[o] !== pid) others.push(rects[order[o]])
+        var resolved = Placement.resolveDrop(rects[pid], others, root.screenBounds(screen))
+        if (Math.round(resolved.x) !== rects[pid].x || Math.round(resolved.y) !== rects[pid].y) {
+          rects[pid] = { x: Math.round(resolved.x), y: Math.round(resolved.y), w: rects[pid].w, h: rects[pid].h }
+          root.moveCommit(pid, Math.round(resolved.x), Math.round(resolved.y), true, String(screen.name))
+        }
+      }
+    }
+  }
+
   // Right-edge floating docks (rosakodu.dock and friends) sit above the
   // bottom layer, so a card dragged under one ends up half-hidden. The
   // compositor's layer list is probed once at startup; a thin vertical
@@ -478,6 +590,10 @@ Item {
         id: cardLoader
         source: root.sourceFor(surface.widgetId)
         onLoaded: root.configure(item, surface.widgetId, surface.screenData)
+        // Ghost while dragging: the card dims so what is underneath stays
+        // readable, and the drop is always resolved to a free spot anyway.
+        opacity: root.gateHeld && root.livePositions[surface.widgetId] !== undefined ? 0.85 : 1.0
+        Behavior on opacity { NumberAnimation { duration: Style.duration(120); easing.type: Easing.OutCubic } }
       }
     }
   }
