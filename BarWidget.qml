@@ -135,10 +135,13 @@ Panel {
 
   // Photo flow: system picker -> extension + duplicate guard -> size/regular
   // file check in a fixed command (path travels as data in $1, never
-  // interpolated into shell) -> persist. Max 12 photos.
+  // interpolated into shell) -> persist. Max 12 photos. Every refusal sets
+  // photoError so the popup says why instead of failing silently.
   property string pendingPhotoPath: ""
+  property string photoError: ""
 
   function addPhoto() {
+    root.photoError = ""
     if (photoPicker.running || photoValidator.running) return
     photoPicker.command = ["omarchy", "file", "select",
       "--title", "Choose a photo",
@@ -147,15 +150,25 @@ Panel {
   }
 
   function gotPickedPhoto(raw) {
+    root.photoError = ""
     var path = String(raw || "").split("\n")[0].trim()
-    if (path === "") return
+    if (path === "") return // picker cancelled; not an error
     var dot = path.lastIndexOf(".")
     var ext = dot !== -1 ? path.substring(dot + 1).toLowerCase() : ""
-    if (["jpg", "jpeg", "png", "webp", "gif", "bmp", "avif"].indexOf(ext) === -1) return
+    if (["jpg", "jpeg", "png", "webp", "gif", "bmp", "avif"].indexOf(ext) === -1) {
+      root.photoError = "Unsupported file type — pick an image (jpg, png, webp, gif, bmp, avif)."
+      return
+    }
     var list = config.photos ? config.photos.slice() : []
-    if (list.length >= 12) return
+    if (list.length >= 12) {
+      root.photoError = "Photo limit reached (12)."
+      return
+    }
     for (var i = 0; i < list.length; i++)
-      if (String(list[i].path) === path) return
+      if (String(list[i].path) === path) {
+        root.photoError = "That photo is already on the desktop."
+        return
+      }
     root.pendingPhotoPath = path
     photoValidator.command = ["bash", "-c",
       'p="$1"; [ -f "$p" ] && [ ! -L "$p" ] && [ "$(stat -c%s "$p")" -le 20971520 ]',
@@ -180,6 +193,8 @@ Panel {
           list.push({ id: "p" + Date.now() + "_" + Math.floor(Math.random() * 100000), path: root.pendingPhotoPath })
           root.write({ photos: list })
         }
+      } else if (root.pendingPhotoPath !== "") {
+        root.photoError = "Couldn't add that photo — not a regular file, or over 20 MB."
       }
       root.pendingPhotoPath = ""
     }
@@ -290,6 +305,7 @@ Panel {
           todos: root.config.todos
           todoRows: root.config.todoRows
           photos: root.config.photos
+          photoError: root.photoError
           onWidgetToggled: function (id) { root.toggleWidget(id) }
           onPositionPicked: function (position) { root.write({ position: position }) }
           onSettingChanged: function (key, value) { root.writeOne(key, value) }
@@ -297,7 +313,7 @@ Panel {
           onTodoToggled: function (id) { root.toggleTodo(id) }
           onTodoAdded: function (text) { root.addTodo(text) }
           onPhotoAddRequested: function () { root.addPhoto() }
-          onPhotoRemoved: function (id) { root.removePhoto(id) }
+          onPhotoRemoved: function (id) { root.removePhoto(id); root.photoError = "" }
           onResetLayoutRequested: function () { root.write({ positions: ({}), sizes: ({}) }) }
           onInstallGlassRequested: root.installGlass()
         }

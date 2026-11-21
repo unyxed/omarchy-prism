@@ -11,6 +11,7 @@ Column {
   property var todos: []
   property int todoRows: 5
   property var photos: []
+  property string photoError: ""
 
   signal widgetToggled(string id)
   signal positionPicked(string position)
@@ -191,7 +192,29 @@ Column {
     }
   }
 
-  SectionHeader { title: "Position"; detail: root.config.position }
+  // Pinned = dragged out of the flow at some point (a stored position).
+  // Only cards without a pin follow the Position anchor, so the picker
+  // must say so instead of appearing to do nothing.
+  readonly property int pinnedCount: {
+    var pins = root.config.positions || {}
+    var widgets = root.config.widgets || []
+    var photos = root.config.photos || []
+    var count = 0
+    for (var k in pins) {
+      if (widgets.indexOf(String(k)) !== -1) { count++; continue }
+      if (String(k).indexOf("photo.") === 0) {
+        var pid = String(k).substring(6)
+        for (var i = 0; i < photos.length; i++)
+          if (String(photos[i].id) === pid) { count++; break }
+      }
+    }
+    return count
+  }
+
+  SectionHeader {
+    title: "Position"
+    detail: root.config.position + (root.pinnedCount > 0 ? " · " + root.pinnedCount + " pinned" : "")
+  }
   Spacer { width: parent.width }
 
   Grid {
@@ -230,6 +253,19 @@ Column {
         }
       }
     }
+  }
+
+  Text {
+    width: parent.width
+    textFormat: Text.PlainText
+    text: root.pinnedCount > 0
+      ? "Applies to unpinned cards only — " + root.pinnedCount + (root.pinnedCount === 1 ? " card is" : " cards are")
+      + " pinned by dragging. \"Reset positions and sizes\" (below) unpins everything."
+      : "All cards follow this anchor until you drag one free."
+    color: root.dim
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.caption
+    wrapMode: Text.WordWrap
   }
 
   SectionHeader { title: "Appearance" }
@@ -318,7 +354,18 @@ Column {
     return n
   }
 
-  SectionHeader { title: "Reminders"; detail: root.openTodos + " open" }
+  SectionHeader { title: "Reminders"; detail: root.openTodos + " open" + (root.widgetEnabled("todo") ? "" : " · card hidden") }
+
+  Text {
+    width: parent.width
+    visible: !root.widgetEnabled("todo")
+    textFormat: Text.PlainText
+    text: "The Reminders card is hidden — turn it on under Widgets to see these on the desktop."
+    color: root.dim
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.caption
+    wrapMode: Text.WordWrap
+  }
 
   Column {
     width: parent.width
@@ -491,6 +538,17 @@ Column {
     text: root.photos.length >= 12 ? "Photo limit reached (12)" : "Add photo…"
     enabled: root.photos.length < 12
     onClicked: root.photoAddRequested()
+  }
+
+  Text {
+    width: parent.width
+    visible: root.photoError !== ""
+    textFormat: Text.PlainText
+    text: root.photoError
+    color: Color.urgent
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.caption
+    wrapMode: Text.WordWrap
   }
 
   Spacer { width: parent.width }
