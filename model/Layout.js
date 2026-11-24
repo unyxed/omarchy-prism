@@ -1,9 +1,9 @@
-// Stack & 2-column macOS bento layout for the default (non-dragged) cards.
+// Stack & 2-column bento layout for the default (non-dragged) cards.
 function widgetName(id) {
   if (id === "clock") return "Clock"
   if (id === "system") return "System"
   if (id === "gpu") return "Graphics"
-  if (id === "media") return "VinylPod"
+  if (id === "media") return "Now Playing"
   if (id === "calendar") return "Calendar"
   if (id === "todo") return "Reminders"
   if (id === "photos") return "Photos"
@@ -23,7 +23,7 @@ function widgetGlyph(id) {
 
 // Places non-dragged cards into 1 or 2 columns anchored at `position`, wrapping
 // to a second column when total height exceeds available vertical space or when
-// 4+ cards are active, matching macOS desktop widget stacks.
+// 4+ cards are active, matching desktop widget stacks.
 function flowPositions(position, entries, spacing, marginX, marginY, screenW, screenH) {
   if (!entries || entries.length === 0) return {}
 

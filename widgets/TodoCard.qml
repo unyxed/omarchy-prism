@@ -2,7 +2,7 @@ import QtQuick
 import qs.Commons
 import qs.Commons as Commons
 
-// macOS Reminders / Twodos split card (Image 2 bottom-right aesthetic):
+// Reminders split card: count and list side by side.
 // Left column: circular icon badge at top, big bold open count + label at bottom.
 // Right column: interactive circular checkboxes + task rows.
 GlassCard {

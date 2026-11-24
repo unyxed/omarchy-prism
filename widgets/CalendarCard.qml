@@ -2,7 +2,7 @@ import QtQuick
 import qs.Commons
 import qs.Commons as Commons
 
-// macOS Calendar Widget with 2 selectable styles:
+// Calendar widget with 2 selectable styles:
 //   - "split": Left column with weekday, large date, calendar feeds; right column with month grid
 //   - "month": Centered full-width month grid with big month header (mac-aesthetic-3 look)
 //

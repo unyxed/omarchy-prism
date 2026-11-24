@@ -1,7 +1,7 @@
 ---
-name: macos-glass-widget
+name: prism-widget
 description: >
-  Add a whole new widget card to the unyxed.macos-glass Omarchy plugin
+  Add a whole new widget card to the unyxed.prism Omarchy plugin
   (new data source + new desktop card). Use when the task is a new widget
   id alongside clock/system/gpu/media/calendar/todo. Covers Settings,
   manifest, sampler service, card, surface wiring, popup toggle, i18n,

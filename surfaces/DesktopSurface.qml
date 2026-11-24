@@ -558,7 +558,7 @@ Item {
       visible: root.show && !remapGuard.remapping
       color: "transparent"
 
-      WlrLayershell.namespace: "unyxed-macos-glass"
+      WlrLayershell.namespace: "unyxed-prism"
       WlrLayershell.layer: WlrLayer.Bottom
       WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
       exclusionMode: ExclusionMode.Normal

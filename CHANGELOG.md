@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.0
+
+- Renamed macOS Glass Widgets → Prism Widgets (`unyxed.prism`): its own
+  identity, no platform mimicry in naming or copy
+
 ## 0.10.0
 
 - Collision-aware free placement: drops resolve to the nearest spot that

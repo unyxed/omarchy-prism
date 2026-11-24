@@ -54,7 +54,7 @@ Item {
     agendaFetch.running = true
   }
 
-  readonly property string agendaScript: Qt.resolvedUrl("../scripts/macos-glass-agenda").toString().replace(/^file:\/\//, "")
+  readonly property string agendaScript: Qt.resolvedUrl("../scripts/prism-agenda").toString().replace(/^file:\/\//, "")
 
   onActiveChanged: {
     if (active) {

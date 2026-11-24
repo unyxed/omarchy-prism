@@ -1,4 +1,4 @@
-// Settings normalisation for macOS Glass Widgets.
+// Settings normalisation for Prism Widgets.
 // The stored object comes from shell.json and is untrusted: every field is
 // coerced and clamped so a bad value yields a working widget.
 var WIDGET_CLOCK = "clock"

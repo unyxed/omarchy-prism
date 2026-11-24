@@ -172,7 +172,7 @@ Item {
     }
   }
 
-  readonly property string lyricsScript: Qt.resolvedUrl("../scripts/macos-glass-lyrics").toString().replace(/^file:\/\//, "")
+  readonly property string lyricsScript: Qt.resolvedUrl("../scripts/prism-lyrics").toString().replace(/^file:\/\//, "")
 
   Process {
     id: lyricsFetch

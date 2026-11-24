@@ -3,7 +3,7 @@ import qs.Commons
 import qs.Commons as Commons
 import qs.Ui
 
-// macOS Media Widget with 4 selectable styles:
+// Media widget with 4 selectable styles:
 //   - "cover": Large rounded album art + title + artist + progress bar + controls
 //   - "poster": Full-card album art backdrop with frosted bottom glass overlay
 //   - "vinyl": Vinyl turntable where the album cover fills the entire record disc
@@ -442,7 +442,7 @@ GlassCard {
       Text {
         width: parent.width
         textFormat: Text.PlainText
-        text: root.hasMedia && root.artist !== "" ? root.artist : "VinylPod"
+        text: root.hasMedia && root.artist !== "" ? root.artist : "Now Playing"
         color: root.dim
         font.family: root.fontFamily
         font.pixelSize: Style.font.caption

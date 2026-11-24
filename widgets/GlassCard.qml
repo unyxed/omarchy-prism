@@ -2,10 +2,10 @@ import QtQuick
 import qs.Commons
 import qs.Commons as Commons
 
-// macOS Sonoma / Sequoia style frosted glass card.
-// Theme-aware translucent fill with a subtle top specular rim and soft border.
-// When hyprglass is bound to the `unyxed-macos-glass` layer namespace, the
-// background blurs and refracts the wallpaper underneath.
+// Frosted glass card with a soft specular rim.
+// Theme-aware translucent fill; when hyprglass is bound to the
+// `unyxed-prism` layer namespace, the background blurs and refracts
+// the wallpaper underneath.
 Rectangle {
   id: root
 
@@ -154,8 +154,8 @@ Rectangle {
 
   // Invisible corner resize handle: no pixels ever change on hover, so there
   // is no flicker as the pointer crosses the corner. The diagonal-resize
-  // cursor still signals that the corner can be dragged (macOS does the
-  // same: no visible handle, cursor feedback only).
+  // cursor still signals that the corner can be dragged (no visible handle,
+  // just cursor feedback).
   MouseArea {
     id: grip
     visible: root.resizable

@@ -1,7 +1,7 @@
-# AGENTS.md — macOS Glass Widgets
+# AGENTS.md — Prism Widgets
 
-Omarchy shell plugin (service + bar-widget): macOS-style glass desktop cards.
-Lives at `~/.config/omarchy/plugins/unyxed.macos-glass/` when installed, and in
+Omarchy shell plugin (service + bar-widget): frosted glass desktop cards.
+Lives at `~/.config/omarchy/plugins/unyxed.prism/` when installed, and in
 its own public git repo when published.
 
 ## Golden rules (violations have broken this plugin before)
@@ -25,9 +25,9 @@ its own public git repo when published.
 
 ## Skills (load the matching one before working)
 
-- `.agents/skills/macos-glass-style/SKILL.md` — add or change a widget style
-- `.agents/skills/macos-glass-widget/SKILL.md` — add a whole new widget
-- `.agents/skills/macos-glass-debug/SKILL.md` — cards broken / toggles dead /
+- `.agents/skills/prism-style/SKILL.md` — add or change a widget style
+- `.agents/skills/prism-widget/SKILL.md` — add a whole new widget
+- `.agents/skills/prism-debug/SKILL.md` — cards broken / toggles dead /
   stale behavior: diagnose with logs, don't guess
 
 ## Docs

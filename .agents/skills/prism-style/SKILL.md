@@ -1,7 +1,7 @@
 ---
-name: macos-glass-style
+name: prism-style
 description: >
-  Add or change a widget style in the unyxed.macos-glass Omarchy plugin
+  Add or change a widget style in the unyxed.prism Omarchy plugin
   (e.g. a new music/clock/system/calendar look). Use when the task is a new
   entry for mediaStyle, clockStyle, systemStyle, or calendarStyle, or
   modifying an existing style's layout. Covers the 6-file change set,
@@ -84,8 +84,8 @@ Then reload and prove it live:
 - `model/*.js`, `Service.qml`, `services/`, `surfaces/` touched:
   `omarchy restart shell` (rescan does NOT recreate running services —
   edits will look ignored otherwise)
-- `hyprctl layers` — one full-size `unyxed-macos-glass` surface per enabled
-  card (`280x1` = card `Loader` failed; see macos-glass-debug skill)
+- `hyprctl layers` — one full-size `unyxed-prism` surface per enabled
+  card (`280x1` = card `Loader` failed; see prism-debug skill)
 - `quickshell log -p /usr/share/omarchy/shell` — zero warnings for this plugin
 - Flip the new style in the popup; confirm it renders and persists across a
   shell restart

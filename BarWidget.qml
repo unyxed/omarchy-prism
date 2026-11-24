@@ -14,7 +14,7 @@ import "model/Sanitize.js" as Sanitize
 Panel {
   id: root
 
-  ipcTarget: "unyxed-macos-glass"
+  ipcTarget: "unyxed-prism"
   manageIpc: false
 
   // The host injects `bar` as a capability-scoped facade whose `shell` can look
@@ -217,7 +217,7 @@ Panel {
   function installGlass() {
     if (glassInstall.running) return
     var script = [
-      "echo 'Installing hyprglass (Liquid Glass) for the macOS Glass plugin...'",
+      "echo 'Installing hyprglass (glass effect) for the Prism plugin...'",
       "echo",
       "if hyprpm add https://github.com/hyprnux/hyprglass && hyprpm enable hyprglass && hyprctl reload; then",
       "  echo",

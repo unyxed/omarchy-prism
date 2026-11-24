@@ -1,6 +1,6 @@
 {
-  "bar.tooltip": "macOS Glass widgets",
-  "bar.hidden": "macOS Glass · hidden",
+  "bar.tooltip": "Prism widgets",
+  "bar.hidden": "Prism · hidden",
   "gpu.absent": "No GPU sensor on this machine",
   "system.threads": "Threads",
   "system.nocores": "No per-core data on this machine",

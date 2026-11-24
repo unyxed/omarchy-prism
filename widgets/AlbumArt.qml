@@ -39,11 +39,11 @@ Item {
     }
 
     function get(source) {
-      var dir = (Quickshell.env("XDG_RUNTIME_DIR") || "") + "/unyxed-macos-glass"
-      if (dir === "/unyxed-macos-glass" || String(source) === "") return
+      var dir = (Quickshell.env("XDG_RUNTIME_DIR") || "") + "/unyxed-prism"
+      if (dir === "/unyxed-prism" || String(source) === "") return
       destination = dir + "/art-" + Qt.md5(String(source)) + ".img"
       if (running) running = false
-      command = ["bash", "--", Qt.resolvedUrl("../scripts/macos-glass-art").toString().replace(/^file:\/\//, ""), String(source), destination, String(root.maxBytes)]
+      command = ["bash", "--", Qt.resolvedUrl("../scripts/prism-art").toString().replace(/^file:\/\//, ""), String(source), destination, String(root.maxBytes)]
       running = true
     }
 

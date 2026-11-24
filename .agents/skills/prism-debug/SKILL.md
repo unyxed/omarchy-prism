@@ -1,13 +1,13 @@
 ---
-name: macos-glass-debug
+name: prism-debug
 description: >
-  Diagnose a broken unyxed.macos-glass Omarchy plugin install: desktop cards
+  Diagnose a broken unyxed.prism Omarchy plugin install: desktop cards
   missing or zero-height, bar toggles with no effect, stale behavior after
   edits, QML binding loops, or shell-log errors. Use when anything about the
   plugin misbehaves. Read shell state and logs first; never guess.
 ---
 
-# Debug macOS Glass Widgets
+# Debug Prism Widgets
 
 Work top-down: shell state → live layers → shell log. Each symptom below maps
 to a cause already root-caused once — check in order before theorizing.
@@ -15,7 +15,7 @@ to a cause already root-caused once — check in order before theorizing.
 ## 0. Baseline (always run first)
 
 ```sh
-python3 -c "import json;d=json.load(open('/home/unyxed/.config/omarchy/shell.json'));[print(sec,e) for sec,arr in d['bar']['layout'].items() for e in arr if 'macos' in str(e.get('id',''))]"
+python3 -c "import json;d=json.load(open('/home/unyxed/.config/omarchy/shell.json'));[print(sec,e) for sec,arr in d['bar']['layout'].items() for e in arr if 'prism' in str(e.get('id',''))]"
 hyprctl layers | grep unyxed
 quickshell log -p /usr/share/omarchy/shell --no-color 2>&1 | grep -iE "unyxed|WARN scene" | grep -v qmlscanner | tail -n 20
 ./scripts/check.sh
@@ -24,10 +24,10 @@ quickshell log -p /usr/share/omarchy/shell --no-color 2>&1 | grep -iE "unyxed|WA
 ## 1. Cards missing from desktop
 
 - **Entry absent from `shell.json` layout** → plugin disabled or entry
-  removed: `omarchy plugin enable unyxed.macos-glass`.
+  removed: `omarchy plugin enable unyxed.prism`.
 - **`widgets: []`** → everything toggled off (writes work, state is empty).
   Re-enable in the popup or via
-  `omarchy bar set unyxed.macos-glass widgets '["clock"]' --json`.
+  `omarchy bar set unyxed.prism widgets '["clock"]' --json`.
 - **Surfaces `280x1`** → card `Loader` failed. Read the log:
   - `GlassCard is not a type` → module-registration failure. Fix: shared
     components co-located in `widgets/` + static `import "../widgets"` in
@@ -49,7 +49,7 @@ Writes never landed if the `shell.json` entry stays bare `{}` after toggling.
   Timer/queue/shadow-copy machinery around it diverges and must go.
 - Service must never call `updateEntryInline` — it only `applySettings()`.
 - Isolate the link under test with a direct write:
-  `omarchy bar set unyxed.macos-glass opacity 0.5` then re-read
+  `omarchy bar set unyxed.prism opacity 0.5` then re-read
   `shell.json`. If it persists, the host path is fine and the bug is in
   the popup's QML (handler never fires, or an exception before the write —
   check the log).
@@ -148,7 +148,7 @@ caught the mirrored-back and vertical-squash bugs):
 3. `grim -g "<card region>"` in a burst loop; compare frames.
 4. Assert: both faces readable (never mirrored), identical card rect on
    front and back shots (no reflow — neighbors must not budge a pixel),
-   zero `macos-glass` log lines.
+   zero `prism` log lines.
 5. Delete the timer, verify zero matches remain, restart, re-verify.
 
 ## 7. After any fix

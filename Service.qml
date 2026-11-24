@@ -19,7 +19,7 @@ Item {
   property string omarchyPath: ""
 
   readonly property string pluginId: manifest && manifest.id
-    ? String(manifest.id) : "unyxed.macos-glass"
+    ? String(manifest.id) : "unyxed.prism"
 
   // Settings, from the bar widget when one is mounted and from the host's bar
   // config snapshot before that.

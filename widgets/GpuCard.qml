@@ -2,7 +2,7 @@ import QtQuick
 import qs.Commons
 import qs.Commons as Commons
 
-// macOS GPU Widget with 2 selectable styles ("rings" and "bars") — zero text truncation.
+// GPU widget with 2 selectable styles ("rings" and "bars") — zero text truncation.
 GlassCard {
   id: root
 

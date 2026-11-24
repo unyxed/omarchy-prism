@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "id": "unyxed.macos-glass",
-  "name": "macOS Glass Widgets",
-  "version": "0.10.0",
+  "id": "unyxed.prism",
+  "name": "Prism Widgets",
+  "version": "0.11.0",
   "author": "unyxed",
   "license": "MIT",
-  "description": "macOS-style desktop widgets with liquid-glass looks: oversized clock, CPU/RAM and GPU ring gauges, vinyl now-playing with album art, split month-grid calendar, and a fast reminders list. Theme-aware cards that turn into real liquid glass with hyprglass.",
+  "description": "Glass desktop widgets with a frosted refractive look: oversized clock, CPU/RAM and GPU ring gauges, vinyl now-playing with album art, split month-grid calendar, and a fast reminders list. Theme-aware cards that turn into real glass with hyprglass.",
   "kinds": [
     "service",
     "bar-widget"
@@ -15,8 +15,8 @@
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "macOS Glass",
-    "description": "macOS-style liquid-glass desktop cards (clock, system, GPU, media, calendar, reminders) with per-card toggles and switchable widget styles.",
+    "displayName": "Prism",
+    "description": "Frosted-glass desktop cards (clock, system, GPU, media, calendar, reminders) with per-card toggles and switchable widget styles.",
     "category": "Widgets",
     "allowMultiple": false,
     "defaultSection": "right",

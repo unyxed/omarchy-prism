@@ -1,10 +1,10 @@
-# macOS Glass Widgets
+# Prism Widgets
 
-macOS-style desktop widgets for Omarchy: an oversized frosted clock, CPU/RAM and
+Glass desktop widgets for Omarchy: an oversized frosted clock, CPU/RAM and
 GPU ring gauges, a vinyl now-playing card with album art, a split month-grid
 calendar, and a fast reminders list. Cards are theme-aware frosted glass, and
-turn into real liquid glass when the [hyprglass](https://github.com/hyprnux/hyprglass)
-compositor plugin is installed.
+turn into real glass with the [hyprglass](https://github.com/hyprnux/hyprglass)
+compositor plugin installed.
 
 ![preview](preview.png)
 
@@ -26,7 +26,7 @@ compositor plugin is installed.
   right-edge floating dock when one is running. Pins are per-monitor, and
   stale overlaps fix themselves at startup. Reset positions & sizes
   unpins everything.
-- **Photo widgets** — add your own pictures as macOS-style photo tiles
+- **Photo widgets** — add your own pictures as photo tiles
 - **Album art** fetched safely (bounded download, magic-byte verified)
 - **Right-drag to move, corner-drag to resize** — positions persist
 - **Reminders** stored locally, toggled from the desktop, added from the bar popup
@@ -37,12 +37,12 @@ compositor plugin is installed.
 - Omarchy (Quattro shell) with Quickshell
 - A media player exposing [MPRIS](https://specifications.freedesktop.org/mpris-spec/latest/)
   (Spotify, Firefox, mpv, Chromium…) for the music card — no extra tools needed
-- Optional: `hyprglass` for true liquid-glass refraction
+- Optional: `hyprglass` for true glass refraction
 
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/<you>/omarchy-macos-glass.git --enable
+omarchy plugin add https://github.com/<you>/omarchy-prism.git --enable
 ```
 
 Replace `<you>` with the repository owner's GitHub name. The plugin enables
@@ -68,7 +68,7 @@ show title and controls without art.
 ## Remove
 
 ```sh
-omarchy plugin remove unyxed.macos-glass
+omarchy plugin remove unyxed.prism
 ```
 
 Removal deletes the plugin directory. Your `shell.json` bar entry is cleaned up
@@ -81,11 +81,11 @@ None required. Optional integrations, all local:
 | Integration | Used for | If missing |
 |---|---|---|
 | MPRIS player | Music card metadata + controls | Card shows “Nothing playing” |
-| hyprglass | Liquid-glass refraction | Frosted translucent cards |
+| hyprglass | Glass refraction | Frosted translucent cards |
 | `~/.config/omarchy/calendars.json` | Calendar feed names | Date grid still renders |
 
 No network calls are made except cover-art downloads (bounded, verified —
-see DEVELOPMENT.md). No executables ship besides the `scripts/macos-glass-art`
+see DEVELOPMENT.md). No executables ship besides the `scripts/prism-art`
 fetcher helper.
 
 ## License

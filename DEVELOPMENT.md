@@ -1,12 +1,12 @@
-# Development guide — macOS Glass Widgets
+# Development guide — Prism Widgets
 
 How this plugin works, how to change it safely, and how to keep it healthy.
 User-facing docs live in [README.md](README.md); publishing in
 [PUBLISHING.md](PUBLISHING.md).
 
 > **Agents:** load `AGENTS.md` first, then the matching skill under
-> `.agents/skills/` (`macos-glass-style`, `macos-glass-widget`,
-> `macos-glass-debug`). This guide is the human-readable companion; the
+> `.agents/skills/` (`prism-style`, `prism-widget`,
+> `prism-debug`). This guide is the human-readable companion; the
 > skills are the executable procedures.
 
 ## 1. Architecture
@@ -38,7 +38,7 @@ Service.qml ──owns──▶ samplers + DesktopSurface ─┘
   The desktop layer has `keyboardFocus: None`, so there is deliberately **no
   text input on desktop cards** — the todo composer lives in the popup.
 - **One `PanelWindow` per card** (not one fullscreen overlay), so gaps between
-  cards stay click-through. Exclusion zone 0, namespace `unyxed-macos-glass`
+  cards stay click-through. Exclusion zone 0, namespace `unyxed-prism`
   (the hyprglass target).
 
 ### File map
@@ -60,7 +60,7 @@ Service.qml ──owns──▶ samplers + DesktopSurface ─┘
 | `model/Sanitize.js` | `escapeMarkup` / `cleanLine` / `boundList`; pure JS, unit-tested |
 | `model/Sysfs.js` | `/proc` parsers; pure JS |
 | `settings/SettingsPanel.qml` | Popup content: toggles, style pickers, sliders, todo manager |
-| `scripts/macos-glass-art` | Bounded art fetcher (curl/file copy + magic-byte gate) |
+| `scripts/prism-art` | Bounded art fetcher (curl/file copy + magic-byte gate) |
 | `i18n/en.json` | English card strings (bar tooltip, empty states, plurals) |
 | `tests/` | `test_sanitize.js`, `test_settings.js`, `test_lyrics.js`, `test_placement.js` — run with `node` |
 
@@ -77,14 +77,14 @@ Service.qml ──owns──▶ samplers + DesktopSurface ─┘
   Player pick order: preferred+playing → preferred → playing → loaded.
   Progress ticks 1/s while playing. Controls call `togglePlaying/next/previous`
   gated on `canControl`/`canGo*`.
-- **Lyrics:** per-track MPRIS change triggers a debounced `scripts/macos-glass-lyrics`
+- **Lyrics:** per-track MPRIS change triggers a debounced `scripts/prism-lyrics`
   fetch (LRClrc, 8s timeout, 64 KiB cap, validated JSON). `model/Lyrics.js`
   parses LRC (`[{t, text}]`, bounded, control-stripped) and resolves the
   current line from playback position. Synced lines render in an auto-following
   `ListView`; untimed lyrics render as scrollable text.
 - **Calendar:** reads `~/.config/omarchy/calendars.json` (names+colors only,
   30s refresh). No network fetch for the front face.
-- **Agenda (card back):** `scripts/macos-glass-agenda` downloads enabled
+- **Agenda (card back):** `scripts/prism-agenda` downloads enabled
   http(s) feed URLs (plain `url` or Google `googleCalendarId` private ICS),
   10s timeout, 512 KiB cap, 2000-VEVENT cap per feed. Parses VEVENTs
   (timezones via zoneinfo, `VALUE=DATE` all-day), expands simple recurrence
@@ -92,7 +92,7 @@ Service.qml ──owns──▶ samplers + DesktopSurface ─┘
   `BYDAY`, `EXDATE` honored, `RECURRENCE-ID` overrides skipped), sorts and
   caps at 50 events over a 14-day window. Refreshed every 15 min while the
   card is shown, plus a manual refresh button. Self-test:
-  `scripts/macos-glass-agenda --selftest` (wired into `check.sh`).
+  `scripts/prism-agenda --selftest` (wired into `check.sh`).
 - **Todos:** stored in the plugin's own bar entry (`todos`, max 50×200 chars).
 - **Photos:** runtime data, not code. `photos: [{id, path}]` (max 12,
   extension-allowlisted in `normalizePhotos`) renders one `WlrLayer.Bottom`
@@ -130,7 +130,7 @@ Service.qml ──owns──▶ samplers + DesktopSurface ─┘
 ## 5. Testing
 
 ```sh
-cd ~/.config/omarchy/plugins/unyxed.macos-glass
+cd ~/.config/omarchy/plugins/unyxed.prism
 node tests/test_sanitize.js && node tests/test_settings.js && node tests/test_placement.js
 omarchy plugin validate .
 for f in BarWidget.qml Service.qml ui/*.qml settings/*.qml surfaces/*.qml widgets/*.qml services/*.qml; do
@@ -171,7 +171,7 @@ Caveats that have bitten before — read before debugging:
   media controls call MPRIS methods, not subprocesses.
 - Art pipeline: player URL → scheme allowlist (`https/http/file`) → helper
   download under timeout+size cap → magic-byte gate (PNG/JPEG/GIF/WebP) →
-  `Image` only ever loads the helper-written file. See `scripts/macos-glass-art`
+  `Image` only ever loads the helper-written file. See `scripts/prism-art`
   and `widgets/AlbumArt.qml`.
 - No network polling loops; sampling timers stop when nothing is shown.
 - Keep tests green: every shared sink for dynamic text needs a regression test.
@@ -190,7 +190,7 @@ for now — cards are translated, popup chrome is not.
 
 - [ ] `node` tests pass, `omarchy plugin validate` clean, `qmllint` clean
 - [ ] `hyprctl layers` shows one full-size surface per enabled card
-- [ ] `quickshell log` shows no warnings for `unyxed.macos-glass`
+- [ ] `quickshell log` shows no warnings for `unyxed.prism`
 - [ ] Toggles/styles persist across shell restart (write path round-trip)
 - [ ] `manifest.json` version bumped, `defaults`/`schema` match `Settings.js`
 - [ ] `CHANGELOG.md` updated

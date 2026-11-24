@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bounded album-art fetcher for macOS Glass Widgets.
+# Bounded album-art fetcher for Prism Widgets.
 #
 # $1 source: an https/http URL, or a file:// URL of a local file
 # $2 destination path (under the plugin's runtime directory)

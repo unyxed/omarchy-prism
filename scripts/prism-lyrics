@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# Bounded lyrics fetcher for macOS Glass Widgets (LRClrc, no API key needed).
+# Bounded lyrics fetcher for Prism Widgets (LRClrc, no API key needed).
 #
-# Usage: macos-glass-lyrics <artist> <title> [album] [duration_sec]
+# Usage: prism-lyrics <artist> <title> [album] [duration_sec]
 # Prints one JSON object to stdout:
 #   {"synced": "<lrc or \"\">", "plain": "<text or \"\">", "instrumental": bool}
 # and exits 0 whether or not lyrics were found (empty strings = none).
@@ -18,7 +18,7 @@ import urllib.request
 HOST = "https://lrclib.net"
 TIMEOUT = 8
 MAX_BYTES = 64 * 1024
-USER_AGENT = "unyxed-macos-glass/0.3.0 (Omarchy desktop widget)"
+USER_AGENT = "unyxed.prism/0.11.0 (Omarchy desktop widget)"
 
 
 def get(path, params):
@@ -44,7 +44,7 @@ def clean(text, cap=20000):
 
 def main(argv):
     if len(argv) < 3:
-        print(json.dumps({"error": "usage: macos-glass-lyrics <artist> <title> [album] [duration]"}))
+        print(json.dumps({"error": "usage: prism-lyrics <artist> <title> [album] [duration]"}))
         return 2
     artist, title = argv[1].strip(), argv[2].strip()
     album = argv[3].strip() if len(argv) > 3 else ""

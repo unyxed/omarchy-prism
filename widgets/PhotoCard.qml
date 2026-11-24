@@ -3,7 +3,7 @@ import QtQuick.Effects
 import qs.Commons
 import qs.Commons as Commons
 
-// macOS-style photo tile: edge-to-edge image with properly rounded corners.
+// Photo tile: edge-to-edge image with properly rounded corners.
 // NOTE: GlassCard's clip:true clips to the square bounding box, so a
 // full-bleed image needs its own rounded-rect mask (MultiEffect, same
 // pattern as AlbumArt) or the corners render square.

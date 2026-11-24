@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Commons
 
-// macOS WidgetKit-style circular ring gauge with an icon or value in the center.
+// Circular ring gauge with an icon or value in the center.
 Item {
   id: root
 

@@ -2,7 +2,7 @@ import QtQuick
 import qs.Commons
 import qs.Commons as Commons
 
-// macOS Clock Widget with 3 selectable styles:
+// Clock widget with 3 selectable styles:
 //   - "hero": Frosted date pill at top, oversized time digits, weekday + date row below
 //   - "glass": Huge centered translucent outlined numerals (mac-style-1 aesthetic)
 //   - "minimal": Editorial left-aligned time with full weekday and date

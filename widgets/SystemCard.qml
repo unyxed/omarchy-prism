@@ -2,9 +2,9 @@ import QtQuick
 import qs.Commons
 import qs.Commons as Commons
 
-// macOS System Widget with 2 selectable styles:
+// System widget with 2 selectable styles:
 //   - "rings": Circular ring gauges with percentage inside the ring + label/GiB below (never truncates)
-//   - "bars": Full-width horizontal macOS metric bars
+//   - "bars": Full-width horizontal metric bars
 //
 // Double-click flips the card: the reverse side is per-thread load detail.
 GlassCard {

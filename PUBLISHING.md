@@ -1,4 +1,4 @@
-# Publishing — macOS Glass Widgets
+# Publishing — Prism Widgets
 
 How to ship this plugin to other Omarchy users and list it on the community
 marketplace.
@@ -8,11 +8,11 @@ marketplace.
 The marketplace lists git repos; `omarchy plugin add <url>` installs from them.
 
 ```sh
-cd ~/.config/omarchy/plugins/unyxed.macos-glass
+cd ~/.config/omarchy/plugins/unyxed.prism
 git init
 git add -A
-git commit -m "macOS Glass Widgets 0.2.0"
-gh repo create omarchy-macos-glass --public --source=. --push
+git commit -m "Prism Widgets 0.11.0"
+gh repo create omarchy-prism --public --source=. --push
 ```
 
 Requirements for the repo root (all already in place except the remote):
@@ -22,7 +22,7 @@ Requirements for the repo root (all already in place except the remote):
 - [ ] `README.md` with install + remove instructions
 - [ ] `LICENSE` file (MIT)
 - [ ] Documented external dependencies (README “External dependencies”)
-- [ ] Unique id outside `omarchy.*` (`unyxed.macos-glass` ✓)
+- [ ] Unique id outside `omarchy.*` (`unyxed.prism` ✓)
 - [ ] No symlinks in the tree (`find . -type l` must print nothing)
 - [ ] Optional `preview.png` at root (included; marketplace auto-optimizes)
 
@@ -34,7 +34,7 @@ no code changes are needed — just push.
 Listing lives at <https://plugins.omarchy.org> (repo:
 `omacom/omarchy-plugin-marketplace`). Submission is an issue form:
 
-- **Repository URL:** `github.com/<you>/omarchy-macos-glass`
+- **Repository URL:** `github.com/<you>/omarchy-prism`
 - **Category:** `Widgets`
 - **Tags:** `media, quickshell, system`
 - **Checklist:** repo is public with install/remove docs; license +
@@ -62,5 +62,5 @@ release and add a `CHANGELOG.md` entry. Keep `manifest.json`
 
 - Users install with `omarchy plugin add <repo-url> --enable`.
 - Push fixes as normal commits; users update with
-  `omarchy plugin update unyxed.macos-glass`.
+  `omarchy plugin update unyxed.prism`.
 - Never rename the plugin id — user configs key off it.
