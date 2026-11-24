@@ -8,6 +8,12 @@ compositor plugin installed.
 
 ![preview](preview.png)
 
+![flipping a card](docs/flip.gif)
+
+*Double-click any music, calendar, or system card to flip it over — lyrics, agenda, and per-thread detail live on the back.*
+
+![desktop](docs/desktop.png)
+
 ## Features
 
 - **6 desktop cards** on the wallpaper layer (below windows, above wallpaper):
@@ -42,11 +48,10 @@ compositor plugin installed.
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/<you>/omarchy-prism.git --enable
+omarchy plugin add https://github.com/unyxed/omarchy-prism.git --enable
 ```
 
-Replace `<you>` with the repository owner's GitHub name. The plugin enables
-itself in the bar (settings icon `◫`); desktop cards appear immediately.
+The plugin enables itself in the bar (settings icon `◫`); desktop cards appear immediately.
 
 ## Configure
 

@@ -18,6 +18,7 @@ GlassCard {
   property string mediaStyle: "cover"
   property bool flipped: false
 
+
   onDoubleClicked: root.flipped = !root.flipped
 
 
