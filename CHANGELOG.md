@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.1
+
+- Privacy fix (marketplace review): disabling the media/calendar widget
+  now stops its background fetches entirely — lyrics and agenda requests
+  are gated on the widget being enabled (not service-active), disabling
+  clears fetched data and kills in-flight requests, and late completions
+  are dropped instead of repopulating state
+
 ## 0.11.0
 
 - Renamed macOS Glass Widgets → Prism Widgets (`unyxed.prism`): its own

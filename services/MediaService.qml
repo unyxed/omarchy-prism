@@ -129,6 +129,13 @@ Item {
 
   // ---- Lyrics (LRClrc, fetched per track, cached per track key) ------------
   // States: "" (nothing requested yet), "loading", "ready", "none".
+  //
+  // Privacy gate: lyricsAllowed is true only while the media widget itself
+  // is enabled. Track changes, the debounce timer and late completions all
+  // check it, and disabling clears everything already fetched — so a
+  // disabled widget can never cause an outbound metadata request, and
+  // nothing fetched earlier is retained.
+  property bool lyricsAllowed: false
   property string lyricsState: ""
   property string lyricsKey: ""
   property string lyricsFetchedKey: ""
@@ -144,6 +151,10 @@ Item {
   readonly property string trackKey: (root.title + "" + root.artist).substring(0, 245)
 
   onTrackKeyChanged: {
+    if (!root.lyricsAllowed) {
+      root.clearLyrics()
+      return
+    }
     root.lyricsKey = root.trackKey
     root.lyricsState = ""
     root.lyricsFetchedKey = ""
@@ -157,10 +168,35 @@ Item {
     lyricsDebounce.restart()
   }
 
+  function clearLyrics() {
+    if (lyricsFetch.running) lyricsFetch.running = false
+    lyricsDebounce.stop()
+    root.lyricsState = ""
+    root.lyricsKey = ""
+    root.lyricsFetchedKey = ""
+    root.lyricsInstrumental = false
+    root.lyricsSyncedRaw = ""
+    root.lyricsPlainRaw = ""
+  }
+
+  onLyricsAllowedChanged: {
+    // Re-enabling arms a fresh fetch for the current track; disabling
+    // wipes everything, including any in-flight request.
+    if (!root.lyricsAllowed) {
+      root.clearLyrics()
+      return
+    }
+    if (root.hasMedia && root.trackKey.trim() !== "" && root.lyricsFetchedKey !== root.trackKey) {
+      root.lyricsKey = root.trackKey
+      lyricsDebounce.restart()
+    }
+  }
+
   Timer {
     id: lyricsDebounce
     interval: 800
     onTriggered: {
+      if (!root.lyricsAllowed) return
       if (!root.hasMedia || root.lyricsKey === "") return
       if (root.lyricsFetchedKey === root.lyricsKey || lyricsFetch.running) return
       root.lyricsState = "loading"
@@ -180,6 +216,10 @@ Item {
       waitForEnd: true
       onStreamFinished: {
         var key = root.lyricsKey
+        // Drop completions that arrive after a disable (or a track hop):
+        // applying them would retain data for a track the fetcher was told
+        // to forget.
+        if (!root.lyricsAllowed || key === "" || key !== root.lyricsKey) return
         var parsed = null
         try {
           parsed = JSON.parse(String(text || ""))
@@ -200,7 +240,7 @@ Item {
       }
     }
     onExited: function (code) {
-      if (code !== 0 && root.lyricsFetchedKey !== root.lyricsKey) {
+      if (code !== 0 && root.lyricsAllowed && root.lyricsFetchedKey !== root.lyricsKey) {
         root.lyricsFetchedKey = root.lyricsKey
         root.lyricsState = "none"
       }

@@ -174,6 +174,11 @@ Caveats that have bitten before — read before debugging:
   `Image` only ever loads the helper-written file. See `scripts/prism-art`
   and `widgets/AlbumArt.qml`.
 - No network polling loops; sampling timers stop when nothing is shown.
+- Background network triggers (lyrics, agenda fetches) are gated on their
+  widget being *enabled*, never on service-active or popup-open: a disabled
+  widget must cause zero outbound requests and retain zero fetched data.
+  Disabling clears state, kills in-flight requests, and late completions
+  are dropped by key+gate checks. Same rule for any future fetcher.
 - Keep tests green: every shared sink for dynamic text needs a regression test.
 
 ## 7. i18n

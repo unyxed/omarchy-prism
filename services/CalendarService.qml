@@ -15,6 +15,12 @@ Item {
   property int enabledCount: 0
 
   // Agenda state: "" (idle), "loading", "ready", "none".
+  //
+  // Privacy gate: agendaAllowed is true only while the calendar widget
+  // itself is enabled. Disabling wipes fetched events and kills any
+  // in-flight request, so no calendar data is fetched or retained for a
+  // widget the user turned off (the popup alone must never trigger it).
+  property bool agendaAllowed: false
   property string agendaState: ""
   property var agendaEvents: []
   property int agendaFeeds: 0
@@ -47,8 +53,24 @@ Item {
     root.enabledCount = enabled
   }
 
+  function clearAgenda() {
+    if (agendaFetch.running) agendaFetch.running = false
+    root.agendaState = ""
+    root.agendaEvents = []
+    root.agendaFeeds = 0
+  }
+
+  onAgendaAllowedChanged: {
+    // Re-enabling re-arms the next fetch; disabling wipes everything.
+    if (!root.agendaAllowed) {
+      root.clearAgenda()
+      return
+    }
+    if (root.agendaState === "") root.fetchAgenda()
+  }
+
   function fetchAgenda() {
-    if (agendaFetch.running || !root.active) return
+    if (agendaFetch.running || !root.active || !root.agendaAllowed) return
     root.agendaState = "loading"
     agendaFetch.command = ["python3", agendaScript]
     agendaFetch.running = true
@@ -91,6 +113,8 @@ Item {
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
+        // Drop completions that arrive after a disable.
+        if (!root.agendaAllowed) return
         var parsed = null
         try {
           parsed = JSON.parse(String(text || ""))
@@ -123,7 +147,7 @@ Item {
       }
     }
     onExited: function (code) {
-      if (code !== 0 && root.agendaState === "loading") root.agendaState = "none"
+      if (code !== 0 && root.agendaAllowed && root.agendaState === "loading") root.agendaState = "none"
     }
   }
 }

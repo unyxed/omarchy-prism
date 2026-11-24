@@ -85,11 +85,13 @@ Item {
     active: root.config.widgets.indexOf("media") !== -1 || root.panelViewing
     intervalMs: root.effectiveIntervalMs
     preferredPlayer: root.config.preferredPlayer
+    lyricsAllowed: root.config.widgets.indexOf("media") !== -1
   }
 
   CalendarService {
     id: calendarService
     active: root.config.widgets.indexOf("calendar") !== -1 || root.panelViewing
+    agendaAllowed: root.config.widgets.indexOf("calendar") !== -1
   }
 
   DesktopSurface {

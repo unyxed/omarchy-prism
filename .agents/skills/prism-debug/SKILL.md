@@ -135,6 +135,12 @@ require `omarchy restart shell`. Popup-only edits apply on rescan.
   exceptions to "warming while showing the front". Screenshot bursts
   cannot measure frame pacing — verify the mid-warm-up flip renders, and
   that warm-up ends warning-free.
+- Background network fetches (lyrics, agenda) are gated on their widget
+  being *enabled* — never on service-active or popup-open. Disabling a
+  widget must stop its requests, clear fetched data, kill in-flight
+  processes, and drop late completions by key+gate checks. This was a
+  marketplace review finding (Medium): a disabled widget silently kept
+  fetching, because the trigger never consulted any enabled flag.
 
 ## 6. Verifying a flip visually without touching the desktop
 
